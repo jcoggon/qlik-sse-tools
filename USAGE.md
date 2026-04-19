@@ -1,6 +1,6 @@
 # Qlik Python Tools — SSE Function Reference (v3.0.0)
 
-> **Server-Side Extension (SSE)** for Qlik Sense and QlikView.
+> **Server-Side Extension (SSE)** for Qlik Sense client-managed.
 > Extends Qlik's expression library with Python-powered machine learning, forecasting, NLP, and LLM capabilities.
 
 ---
