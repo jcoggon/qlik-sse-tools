@@ -6,6 +6,15 @@ This repository exposes analytics, machine learning, forecasting, NLP, LLM, and 
 
 > The top-level README documents the current project. Older material under `docs/` is still useful for sample apps and reference assets, but parts of that folder predate the rebuild.
 
+## Recommended companion: Raptor Codex
+
+This SSE can absolutely be used directly by a developer, but it was built to pair especially well with the Raptor Codex Extension as the recommended day-to-day experience.
+
+If you want the smoothest workflow around this project, install Raptor Codex here:
+
+- [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=workbalance.raptor-codex)
+- [Open VSX Registry](https://open-vsx.org/extension/Workbalance/raptor-codex)
+
 ## What this project can do
 
 - Train and score scikit-learn, XGBoost, LightGBM, and optional Keras models from Qlik.
