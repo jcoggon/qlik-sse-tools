@@ -15,6 +15,8 @@ If you want the smoothest workflow around this project, install Raptor Codex her
 - [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=workbalance.raptor-codex)
 - [Open VSX Registry](https://open-vsx.org/extension/Workbalance/raptor-codex)
 
+To learn more about Raptor Codex and the broader platform around it, visit [raptorbi.ai](https://raptorbi.ai/).
+
 ## What this project can do
 
 - Train and score scikit-learn, XGBoost, LightGBM, and optional Keras models from Qlik.
