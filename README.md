@@ -1,6 +1,6 @@
 # Qlik SSE Tools
 
-Modern Python Server-Side Extension (SSE) tooling for Qlik Sense and QlikView.
+Modern Python Server-Side Extension (SSE) tooling for Qlik Sense Client-Managed.
 
 This repository exposes analytics, machine learning, forecasting, NLP, LLM, and web/document extraction workflows to Qlik through a gRPC-based SSE service. It is not just a mirror of the older upstream project: the current codebase has been substantially rebuilt for modern Python and current library versions, with new integrations and a cleaner operational workflow.
 
@@ -172,7 +172,7 @@ This repository still includes legacy sample apps and documentation assets becau
 
 ## Attribution
 
-This project builds on the original `qlik-py-tools` work by Nabeel Asif. The current repository has diverged significantly through modernization, dependency upgrades, new integrations, and workflow changes, but it still acknowledges that original foundation.
+This project builds on the original [`qlik-py-tools`](https://github.com/nabeel-oz/qlik-py-tools) work by Nabeel Asif. The current repository has diverged significantly through modernization, dependency upgrades, new integrations, and workflow changes, but it still acknowledges that original foundation.
 
 ## License
 
