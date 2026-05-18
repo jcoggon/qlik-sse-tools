@@ -4,18 +4,15 @@ Modern Python Server-Side Extension (SSE) tooling for Qlik Sense Client-Managed.
 
 This repository exposes analytics, machine learning, forecasting, NLP, LLM, and web/document extraction workflows to Qlik through a gRPC-based SSE service. It is not just a mirror of the older upstream project: the current codebase has been substantially rebuilt for modern Python and current library versions, with new integrations and a cleaner operational workflow.
 
-> The top-level README documents the current project. Older material under `docs/` is still useful for sample apps and reference assets, but parts of that folder predate the rebuild.
+> The top-level README documents the current project. The `docs/` folder now contains lean Markdown reference pages for humans and AI agents; legacy sample apps, data files, notebooks, and screenshots have been removed.
 
-## Recommended companion: Raptor Codex
+## Recommended companion: Raptor MCP
 
-This SSE can absolutely be used directly by a developer, but it was built to pair especially well with the Raptor Codex Extension as the recommended day-to-day experience.
+This SSE can be used directly from Qlik Sense Client-Managed, but it also pairs with Raptor MCP as the recommended AI-assisted workflow for setup, troubleshooting, script generation, and customer-server operations.
 
-If you want the smoothest workflow around this project, install Raptor Codex here:
+Raptor MCP is the current product surface for the AI assistant runtime and downloadable client packages. Use it when you want an MCP-capable assistant to help inspect Qlik apps, reason about SSE usage, generate load-script patterns, or package this SSE for customer environments.
 
-- [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=workbalance.raptor-codex)
-- [Open VSX Registry](https://open-vsx.org/extension/Workbalance/raptor-codex)
-
-To learn more about Raptor Codex and the broader platform around it, visit [raptorbi.ai](https://raptorbi.ai/).
+To learn more about Raptor MCP and the broader platform around it, visit [raptorbi.ai](https://raptorbi.ai/).
 
 ## What this project can do
 
@@ -40,6 +37,7 @@ To learn more about Raptor Codex and the broader platform around it, visit [rapt
 - Added optional package bundles via `Qlik-Py-Extras.*`.
 - Improved startup scripts so source changes sync into the runtime venv before launch.
 - Added Windows service install/uninstall scripts using NSSM.
+- Added a persistent runtime temp directory for Prophet/CmdStanPy so long-running Windows services do not depend on the user temp folder.
 - Kept heavyweight components like TensorFlow/Keras lazily loaded so the core SSE can start more reliably.
 
 ## Feature areas
@@ -73,6 +71,8 @@ copy .env.example .env
 
 Populate the values you need for your deployment. Only the integrations you plan to use need credentials.
 
+Prophet uses CmdStanPy, which writes temporary model data while fitting. The SSE now stores those files in a persistent runtime folder by default: `qlik-py-env/tmp`. If a customer needs a specific location, set `QLIK_PY_TOOLS_TEMP_DIR` in `.env`.
+
 ### 2. Initialize the runtime
 
 macOS or Linux:
@@ -88,6 +88,24 @@ Qlik-Py-Init.bat
 ```
 
 This creates `qlik-py-env/`, copies the source into the runtime location, installs dependencies, and downloads the default spaCy English model.
+
+## Build a download package
+
+After changes are tested, create a clean customer download zip with:
+
+```bash
+./qlik-py-env/bin/python scripts/package_sse.py
+```
+
+By default this runs the standalone verification suite and writes `dist/raptor-qlik-sse-tools.zip`. To publish into the Raptor MCP web artifacts on this machine:
+
+```bash
+./qlik-py-env/bin/python scripts/package_sse.py \
+  --output-dir /Users/jcoggon/Development/qlik-cloud-script-studio/.artifacts \
+  --output-dir /Users/jcoggon/Development/qlik-cloud-script-studio/.web-download-artifacts
+```
+
+On another dev machine, keep the same command shape but point the output directories at that checkout's Raptor repo.
 
 ### 3. Start the SSE
 
@@ -174,12 +192,12 @@ For customer-server style Windows deployments, this repo includes:
 | `core/` | Main SSE implementation and feature modules |
 | `generated/` | Generated protobuf and gRPC bindings |
 | `tests/` | Standalone verification suite |
-| `docs/` | Sample apps, sample data, legacy reference docs, and assets |
+| `docs/` | Markdown-only capability reference for humans and AI agents |
 | `qlik-py-env/` | Runtime virtual environment created by the init scripts |
 
-## Notes on legacy material
+## Notes on documentation
 
-This repository still includes legacy sample apps and documentation assets because they are useful for testing and Qlik-side examples. The authoritative public entry points for the rebuilt project are this README, [`USAGE.md`](USAGE.md), and [`TESTING.md`](TESTING.md).
+The authoritative public entry points for the rebuilt project are this README, [`USAGE.md`](USAGE.md), [`TESTING.md`](TESTING.md), and the Markdown-only capability references under `docs/`.
 
 ## Attribution
 

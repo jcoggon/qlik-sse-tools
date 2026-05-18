@@ -86,7 +86,7 @@ qlik-py-env\Scripts\python -m spacy download en_core_web_sm  # Windows
 ```
 
 ### Step 3: Install openpyxl
-Required for reading the Excel sample data files used in tests.
+Required for Excel parsing and document workflows. The standalone tests use synthetic data, but production document parsing may need this package.
 ```bash
 ./qlik-py-env/bin/pip install openpyxl    # macOS/Linux
 qlik-py-env\Scripts\pip install openpyxl  # Windows
@@ -194,13 +194,13 @@ Confirms `LLMForQlik` and `ClaudeForQlik` classes are importable. Actual API cal
 Tests Pearson, Spearman, and Kendall correlation coefficients using known correlated data.
 
 ### 7. Prophet Forecasting
-Tests with bike-sharing monthly data (`docs/bike-sharing/day.csv`):
+Tests with a deterministic synthetic monthly time series:
 - **Pipe-delimited kwargs**: `freq=MS|return=yhat|debug=false` (format used by Qlik apps)
 - **Comma-delimited kwargs**: `freq=MS,return=yhat,debug=false` (legacy format)
 - Verifies forecast length matches request, future periods are non-NaN
 
 ### 8. StatsForecast
-Tests AutoARIMA and AutoETS models with the same bike-sharing data. Verifies forecast output length matches input.
+Tests AutoARIMA and AutoETS models with the same synthetic monthly time series. Verifies forecast output length matches input.
 
 ### 9. HDBSCAN Clustering
 Generates 3 clear synthetic clusters (30 points each) and verifies HDBSCAN finds at least 2 distinct clusters.
@@ -213,16 +213,9 @@ Tests the Apriori algorithm with market basket data (8 transactions of bread/mil
 
 ---
 
-## Sample Data
+## Test Data
 
-The project includes sample data in `docs/`:
-
-| File | Description | Best For |
-|------|-------------|----------|
-| `docs/bike-sharing/day.csv` | Daily bike rental counts (731 days) | Prophet, StatsForecast |
-| `docs/HR-Employee-Attrition.xlsx` | HR employee data with features | scikit-learn, Keras |
-| `docs/VIC-Emergency-Department-Attendances.xlsx` | Monthly hospital attendance (40 hospitals) | Prophet (multi-series) |
-| `docs/hands-on/data/Train Test.xlsx` | Train/test split data | scikit-learn |
+The standalone verification suite generates its own compact synthetic datasets. The repository no longer ships legacy sample apps, sample spreadsheets, notebooks, screenshots, or QVD/QVF assets under `docs/`.
 
 ---
 

@@ -7,12 +7,14 @@ import warnings
 import numpy as np
 import pandas as pd
 import _utils as utils
+from _runtime_paths import configure_runtime_temp
 import ServerSideExtension_pb2 as SSE
 
 # Suppress warnings
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
+configure_runtime_temp()
 from prophet import Prophet
 
 # Add Generated folder to module path.
@@ -269,6 +271,7 @@ class ProphetForQlik:
                 self.model.add_regressor(regressor, **self.regressor_kwargs[i])
                 i+=1
 
+        configure_runtime_temp()
         self.model.fit(self.input_df, **self.fit_kwargs)
              
         # Create a data frame for future values

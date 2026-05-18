@@ -28,7 +28,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 CORE_DIR = os.path.join(PROJECT_ROOT, 'core')
 GENERATED_DIR = os.path.join(PROJECT_ROOT, 'generated')
-DOCS_DIR = os.path.join(PROJECT_ROOT, 'docs')
 
 # We need to run from a directory where _utils, _prophet etc. can be found
 if CORE_DIR not in sys.path:
@@ -119,16 +118,16 @@ results = TestResults()
 context = MockContext()
 
 # ---------------------------------------------------------------------------
-# Sample data generators
+# Synthetic data generators
 # ---------------------------------------------------------------------------
 
-def get_bike_sharing_monthly():
-    """Load bike-sharing data aggregated to monthly for time series tests."""
-    csv_path = os.path.join(DOCS_DIR, 'bike-sharing', 'day.csv')
-    df = pd.read_csv(csv_path, parse_dates=['dteday'])
-    monthly = df.set_index('dteday').resample('MS')['cnt'].sum().reset_index()
-    monthly.columns = ['ds', 'y']
-    return monthly
+def get_monthly_forecast_series():
+    """Generate a deterministic monthly time series for forecasting tests."""
+    dates = pd.date_range('2022-01-01', periods=24, freq='MS')
+    trend = np.linspace(100, 180, len(dates))
+    seasonal = 12 * np.sin(np.arange(len(dates)) * 2 * np.pi / 12)
+    values = trend + seasonal
+    return pd.DataFrame({'ds': dates, 'y': values})
 
 
 def qlik_date_num(dt):
@@ -176,7 +175,7 @@ def test_prophet():
     try:
         from _prophet import ProphetForQlik
         
-        monthly = get_bike_sharing_monthly()
+        monthly = get_monthly_forecast_series()
         n_periods = 3  # forecast 3 months ahead
         
         # Build request data: historical dates + placeholder rows for forecast
@@ -205,7 +204,7 @@ def test_prophet():
         assert not forecast_values.isnull().any(), \
             f"Forecast periods should not contain NaN: {forecast_values.tolist()}"
         assert all(v > 0 for v in forecast_values), \
-            "Forecast values should be positive for bike sharing counts"
+            "Forecast values should be positive for the synthetic series"
         
         results.record("Prophet Forecasting", True, duration=time.time()-t0)
     except Exception as e:
@@ -221,7 +220,7 @@ def test_statsforecast():
     try:
         from _statsforecast import StatsForecastForQlik
         
-        monthly = get_bike_sharing_monthly()
+        monthly = get_monthly_forecast_series()
         n_periods = 3
         
         rows_data = []
@@ -259,7 +258,7 @@ def test_statsforecast_ets():
     try:
         from _statsforecast import StatsForecastForQlik
         
-        monthly = get_bike_sharing_monthly()
+        monthly = get_monthly_forecast_series()
         n_periods = 3
         
         rows_data = []
@@ -574,7 +573,7 @@ def test_prophet_pipe_kwargs():
     try:
         from _prophet import ProphetForQlik
         
-        monthly = get_bike_sharing_monthly()
+        monthly = get_monthly_forecast_series()
         n_periods = 3
         
         # Use pipe-delimited kwargs (the format Qlik apps actually send)
@@ -615,7 +614,7 @@ def test_prophet_comma_kwargs():
     try:
         from _prophet import ProphetForQlik
         
-        monthly = get_bike_sharing_monthly()
+        monthly = get_monthly_forecast_series()
         n_periods = 3
         
         # Use comma-delimited kwargs (legacy format)

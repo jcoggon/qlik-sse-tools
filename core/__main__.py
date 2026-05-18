@@ -30,6 +30,10 @@ PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(PARENT_DIR, '.env'))
 sys.path.append(os.path.join(PARENT_DIR, 'generated'))
 
+from _runtime_paths import configure_runtime_temp
+RUNTIME_TEMP_DIR = configure_runtime_temp()
+_status(f'Runtime temp directory: {RUNTIME_TEMP_DIR}')
+
 _status('Loading gRPC and protobuf...')
 import ServerSideExtension_pb2 as SSE
 import ServerSideExtension_pb2_grpc as SSE_grpc
