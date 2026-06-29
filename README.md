@@ -36,7 +36,7 @@ To learn more about Raptor MCP and the broader platform around it, visit [raptor
 - Added a standalone verification suite in [`TESTING.md`](TESTING.md).
 - Added optional package bundles via `Qlik-Py-Extras.*`.
 - Improved startup scripts so source changes sync into the runtime venv before launch.
-- Added Windows service install/uninstall scripts using NSSM.
+- Added Windows service install/uninstall scripts using Servy.
 - Added a persistent runtime temp directory for Prophet/CmdStanPy so long-running Windows services do not depend on the user temp folder.
 - Kept heavyweight components like TensorFlow/Keras lazily loaded so the core SSE can start more reliably.
 
@@ -183,7 +183,7 @@ For customer-server style Windows deployments, this repo includes:
 
 - `Qlik-Py-Init.bat` for environment setup
 - `Qlik-Py-Start.bat` for foreground execution
-- `Qlik-Py-Service-Install.bat` and `Qlik-Py-Service-Uninstall.bat` for NSSM-backed Windows service management
+- `Qlik-Py-Service-Install.bat` and `Qlik-Py-Service-Uninstall.bat` for Servy-backed Windows service management. The customer download package includes the pinned Servy x64 installer for offline service installs.
 
 ## Repository layout
 

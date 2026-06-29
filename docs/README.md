@@ -58,7 +58,7 @@ Some legacy functions also accept comma-delimited kwargs. Prefer pipe delimiters
 - Runtime folder after initialization: `qlik-py-env`.
 - Runtime logs are written under `qlik-py-env/core/logs` when running from the installed environment.
 - Python runtime target: Python `3.13+`.
-- The Windows service helper uses NSSM and runs `qlik-py-env/core/__main__.py`.
+- The Windows service helper uses Servy and runs `qlik-py-env/core/__main__.py`.
 - Prophet/CmdStanPy temp files use a persistent runtime temp folder by default: `qlik-py-env/tmp`.
 - Set `QLIK_PY_TOOLS_TEMP_DIR` in `.env` only when an operator needs to force a different persistent temp location.
 

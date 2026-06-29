@@ -25,28 +25,27 @@ if !ERRORLEVEL! neq 0 (
     exit /b 0
 )
 
-REM Locate NSSM
-set "NSSM_EXE="
-if exist "%SCRIPT_DIR%nssm.exe" (
-    set "NSSM_EXE=%SCRIPT_DIR%nssm.exe"
-) else (
-    where nssm >nul 2>&1
-    if !ERRORLEVEL! equ 0 (
-        for /f "tokens=*" %%i in ('where nssm') do set "NSSM_EXE=%%i"
-    )
+REM Locate Servy CLI
+set "SERVY_CLI="
+where servy-cli.exe >nul 2>&1
+if !ERRORLEVEL! equ 0 (
+    for /f "tokens=*" %%i in ('where servy-cli.exe') do set "SERVY_CLI=%%i"
 )
-
-if not defined NSSM_EXE (
-    echo ERROR: NSSM not found. Place nssm.exe in %SCRIPT_DIR% or add to PATH.
-    pause
-    exit /b 1
-)
+if not defined SERVY_CLI if exist "%ProgramFiles%\Servy\servy-cli.exe" set "SERVY_CLI=%ProgramFiles%\Servy\servy-cli.exe"
+if not defined SERVY_CLI if exist "%ProgramFiles(x86)%\Servy\servy-cli.exe" set "SERVY_CLI=%ProgramFiles(x86)%\Servy\servy-cli.exe"
+if not defined SERVY_CLI if exist "%SCRIPT_DIR%servy-cli.exe" set "SERVY_CLI=%SCRIPT_DIR%servy-cli.exe"
 
 echo Stopping service...
 net stop %SERVICE_NAME% >nul 2>&1
 
 echo Removing service...
-"%NSSM_EXE%" remove %SERVICE_NAME% confirm
+if defined SERVY_CLI (
+    "%SERVY_CLI%" uninstall "--name=%SERVICE_NAME%" --quiet
+) else (
+    echo Servy CLI was not found; falling back to sc delete.
+    sc delete %SERVICE_NAME%
+)
+
 if !ERRORLEVEL! equ 0 (
     echo.
     echo Service '%SERVICE_NAME%' removed successfully.

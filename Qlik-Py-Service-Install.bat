@@ -3,10 +3,13 @@ setlocal enabledelayedexpansion
 
 REM ============================================================
 REM  Qlik Python Tools - Windows Service Installer
-REM  Uses NSSM (Non-Sucking Service Manager) to run as a service
+REM  Uses Servy to run the SSE as a Windows service
 REM ============================================================
 
 set "SERVICE_NAME=QlikPyTools"
+set "DISPLAY_NAME=Qlik Python Tools SSE"
+set "DESCRIPTION=Qlik Server Side Extension providing Python data science functions"
+set "SERVY_VERSION=8.5"
 set "SCRIPT_DIR=%~dp0"
 set "VENV_DIR=%SCRIPT_DIR%qlik-py-env"
 set "PYTHON_EXE=%VENV_DIR%\Scripts\python.exe"
@@ -30,25 +33,49 @@ if not exist "%PYTHON_EXE%" (
     exit /b 1
 )
 
-REM Locate NSSM - check local directory, then PATH
-set "NSSM_EXE="
-if exist "%SCRIPT_DIR%nssm.exe" (
-    set "NSSM_EXE=%SCRIPT_DIR%nssm.exe"
-) else (
-    where nssm >nul 2>&1
-    if !ERRORLEVEL! equ 0 (
-        for /f "tokens=*" %%i in ('where nssm') do set "NSSM_EXE=%%i"
+REM Locate Servy CLI - check PATH, common install folder, then package directory
+set "SERVY_CLI="
+where servy-cli.exe >nul 2>&1
+if !ERRORLEVEL! equ 0 (
+    for /f "tokens=*" %%i in ('where servy-cli.exe') do set "SERVY_CLI=%%i"
+)
+if not defined SERVY_CLI if exist "%ProgramFiles%\Servy\servy-cli.exe" set "SERVY_CLI=%ProgramFiles%\Servy\servy-cli.exe"
+if not defined SERVY_CLI if exist "%ProgramFiles(x86)%\Servy\servy-cli.exe" set "SERVY_CLI=%ProgramFiles(x86)%\Servy\servy-cli.exe"
+if not defined SERVY_CLI if exist "%SCRIPT_DIR%servy-cli.exe" set "SERVY_CLI=%SCRIPT_DIR%servy-cli.exe"
+
+if not defined SERVY_CLI (
+    set "SERVY_INSTALLER="
+    if exist "%SCRIPT_DIR%servy-%SERVY_VERSION%-x64-installer.exe" set "SERVY_INSTALLER=%SCRIPT_DIR%servy-%SERVY_VERSION%-x64-installer.exe"
+    if not defined SERVY_INSTALLER (
+        for %%f in ("%SCRIPT_DIR%servy-*-x64-installer.exe") do (
+            if exist "%%~f" set "SERVY_INSTALLER=%%~f"
+        )
     )
+    if not defined SERVY_INSTALLER (
+        echo ERROR: Servy was not found.
+        echo.
+        echo Place servy-%SERVY_VERSION%-x64-installer.exe in this directory:
+        echo   %SCRIPT_DIR%
+        echo.
+        echo The Raptor gateway package normally includes this installer in the bundled SSE tools zip.
+        pause
+        exit /b 1
+    )
+
+    echo Installing Servy from !SERVY_INSTALLER!...
+    "!SERVY_INSTALLER!" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+    if !ERRORLEVEL! neq 0 (
+        echo ERROR: Servy installer failed with exit code !ERRORLEVEL!.
+        pause
+        exit /b 1
+    )
+
+    if exist "%ProgramFiles%\Servy\servy-cli.exe" set "SERVY_CLI=%ProgramFiles%\Servy\servy-cli.exe"
+    if not defined SERVY_CLI if exist "%ProgramFiles(x86)%\Servy\servy-cli.exe" set "SERVY_CLI=%ProgramFiles(x86)%\Servy\servy-cli.exe"
 )
 
-if not defined NSSM_EXE (
-    echo ERROR: NSSM ^(Non-Sucking Service Manager^) not found.
-    echo.
-    echo Please download NSSM from: https://nssm.cc/download
-    echo Then either:
-    echo   1. Place nssm.exe in this directory: %SCRIPT_DIR%
-    echo   2. Or add it to your system PATH
-    echo.
+if not defined SERVY_CLI (
+    echo ERROR: Servy installer completed, but servy-cli.exe was not found.
     pause
     exit /b 1
 )
@@ -61,7 +88,7 @@ echo  Service name:  %SERVICE_NAME%
 echo  Python:        %PYTHON_EXE%
 echo  Working dir:   %CORE_DIR%
 echo  Log directory: %LOG_DIR%
-echo  NSSM:          %NSSM_EXE%
+echo  Servy CLI:     %SERVY_CLI%
 echo.
 
 REM Check if service already exists
@@ -77,38 +104,12 @@ REM Ensure log directory exists
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
 echo Installing service...
-"%NSSM_EXE%" install %SERVICE_NAME% "%PYTHON_EXE%" "-u __main__.py"
+"%SERVY_CLI%" install "--name=%SERVICE_NAME%" "--displayName=%DISPLAY_NAME%" "--description=%DESCRIPTION%" "--path=%PYTHON_EXE%" "--startupDir=%CORE_DIR%" "--params=-u __main__.py" "--startupType=AutomaticDelayedStart" "--stdout=%LOG_DIR%\service-stdout.log" "--stderr=%LOG_DIR%\service-stderr.log" --enableSizeRotation "--rotationSize=5" "--maxRotations=10" "--recoveryAction=RestartProcess" "--maxRestartAttempts=0" --quiet
 if !ERRORLEVEL! neq 0 (
     echo ERROR: Failed to install service.
     pause
     exit /b 1
 )
-
-REM Configure service parameters
-echo Configuring service...
-
-REM Set working directory to core/ so relative paths work correctly
-"%NSSM_EXE%" set %SERVICE_NAME% AppDirectory "%CORE_DIR%"
-
-REM Set display name and description
-"%NSSM_EXE%" set %SERVICE_NAME% DisplayName "Qlik Python Tools SSE"
-"%NSSM_EXE%" set %SERVICE_NAME% Description "Qlik Server Side Extension providing Python data science functions"
-
-REM Redirect stdout and stderr to log files (captures startup messages)
-"%NSSM_EXE%" set %SERVICE_NAME% AppStdout "%LOG_DIR%\service-stdout.log"
-"%NSSM_EXE%" set %SERVICE_NAME% AppStderr "%LOG_DIR%\service-stderr.log"
-"%NSSM_EXE%" set %SERVICE_NAME% AppStdoutCreationDisposition 4
-"%NSSM_EXE%" set %SERVICE_NAME% AppStderrCreationDisposition 4
-"%NSSM_EXE%" set %SERVICE_NAME% AppRotateFiles 1
-"%NSSM_EXE%" set %SERVICE_NAME% AppRotateOnline 1
-"%NSSM_EXE%" set %SERVICE_NAME% AppRotateBytes 5242880
-
-REM Auto-restart on failure
-"%NSSM_EXE%" set %SERVICE_NAME% AppExit Default Restart
-"%NSSM_EXE%" set %SERVICE_NAME% AppRestartDelay 5000
-
-REM Set startup type to automatic
-"%NSSM_EXE%" set %SERVICE_NAME% Start SERVICE_AUTO_START
 
 echo.
 echo ============================================================
@@ -132,7 +133,7 @@ echo.
 set /p START_NOW="Start the service now? (Y/N): "
 if /i "%START_NOW%"=="Y" (
     echo Starting service...
-    net start %SERVICE_NAME%
+    "%SERVY_CLI%" start "--name=%SERVICE_NAME%" --quiet
     if !ERRORLEVEL! equ 0 (
         echo Service started successfully.
     ) else (

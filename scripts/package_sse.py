@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.request
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,6 +24,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARTIFACT_NAME = "raptor-qlik-sse-tools.zip"
 PACKAGE_ROOT_NAME = "raptor-qlik-sse-tools"
+SERVY_VERSION = "8.5"
+SERVY_INSTALLER_NAME = f"servy-{SERVY_VERSION}-x64-installer.exe"
+SERVY_DOWNLOAD_URL = f"https://github.com/aelassas/servy/releases/download/v{SERVY_VERSION}/{SERVY_INSTALLER_NAME}"
 
 INCLUDE_PATHS = [
     ".env.example",
@@ -124,6 +128,24 @@ def copy_package_files(stage_root: Path) -> None:
             shutil.copy2(source, target)
 
     write_package_metadata(package_root)
+    include_servy_installer(package_root)
+
+
+def include_servy_installer(package_root: Path) -> None:
+    source = REPO_ROOT / SERVY_INSTALLER_NAME
+    target = package_root / SERVY_INSTALLER_NAME
+    if source.exists():
+        shutil.copy2(source, target)
+        return
+
+    print(f"Downloading Servy {SERVY_VERSION} service installer...")
+    try:
+        urllib.request.urlretrieve(SERVY_DOWNLOAD_URL, target)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not include {SERVY_INSTALLER_NAME}. Download it from {SERVY_DOWNLOAD_URL} "
+            f"and place it in {REPO_ROOT}, then rerun packaging."
+        ) from exc
 
 
 def run_tests() -> None:
