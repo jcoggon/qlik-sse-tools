@@ -183,7 +183,9 @@ For customer-server style Windows deployments, this repo includes:
 
 - `Qlik-Py-Init.bat` for environment setup
 - `Qlik-Py-Start.bat` for foreground execution
-- `Qlik-Py-Service-Install.bat` and `Qlik-Py-Service-Uninstall.bat` for Servy-backed Windows service management. The customer download package includes the pinned Servy x64 installer for offline service installs.
+- `Qlik-Py-Service-Install.bat` and `Qlik-Py-Service-Uninstall.bat` for Servy-backed Windows service management.
+
+The SSE download package does not bundle Servy. Before running the service installer, install Servy system-wide or download the Servy x64 installer from <https://github.com/aelassas/servy/releases> and place `servy-8.5-x64-installer.exe` beside `Qlik-Py-Service-Install.bat`.
 
 ## Repository layout
 

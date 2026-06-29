@@ -57,7 +57,9 @@ if not defined SERVY_CLI (
         echo Place servy-%SERVY_VERSION%-x64-installer.exe in this directory:
         echo   %SCRIPT_DIR%
         echo.
-        echo The Raptor gateway package normally includes this installer in the bundled SSE tools zip.
+        echo Or install Servy system-wide so servy-cli.exe is available in Program Files or PATH.
+        echo Download Servy from:
+        echo   https://github.com/aelassas/servy/releases
         pause
         exit /b 1
     )
