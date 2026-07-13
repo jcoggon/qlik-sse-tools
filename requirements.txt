@@ -15,9 +15,9 @@ requests==2.34.2
 click==8.4.2
 
 # === Data / Numerics ===
-numpy==2.4.2
-pandas==2.3.3
-scipy==1.15.3
+numpy==2.5.1
+pandas==3.0.3
+scipy==1.18.0
 joblib==1.5.3
 
 # === Machine Learning ===
