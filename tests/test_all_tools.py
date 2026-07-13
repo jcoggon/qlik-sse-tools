@@ -20,6 +20,10 @@ import locale
 
 warnings.simplefilter("ignore")
 locale.setlocale(locale.LC_NUMERIC, '')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Path setup — make sure we can import from core/ and generated/
