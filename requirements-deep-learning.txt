@@ -1,0 +1,5 @@
+# Optional deep-learning runtime. Install with Qlik-Py-Extras deep_learning.
+tensorflow==2.21.0
+keras==3.15.0
+scikeras==0.13.0
+h5py==3.14.0

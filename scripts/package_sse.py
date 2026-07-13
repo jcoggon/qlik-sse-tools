@@ -26,14 +26,23 @@ PACKAGE_ROOT_NAME = "raptor-qlik-sse-tools"
 
 INCLUDE_PATHS = [
     ".env.example",
+    "CHANGELOG.md",
     "LICENSE",
     "README.md",
     "TESTING.md",
     "USAGE.md",
     "requirements.txt",
+    "requirements-cloud.txt",
+    "requirements-deep-learning.txt",
+    "requirements-dev.txt",
+    "pyproject.toml",
+    "uv.lock",
     "install_extras.py",
     "Qlik-Py-Extras.bat",
     "Qlik-Py-Extras.sh",
+    "Qlik-Py-Cloud-Start.bat",
+    "Qlik-Py-Cloud-Start.ps1",
+    "Qlik-Py-Cloud-Start.sh",
     "Qlik-Py-Init.bat",
     "Qlik-Py-Init.ps1",
     "Qlik-Py-Init.sh",
@@ -45,6 +54,7 @@ INCLUDE_PATHS = [
     "core",
     "generated",
     "docs",
+    "scripts",
     "tests",
 ]
 
@@ -55,6 +65,7 @@ EXCLUDED_NAMES = {
     "__pycache__",
     "downloads",
     "dist",
+    "logs",
     "qlik-py-env",
     "tmp",
 }

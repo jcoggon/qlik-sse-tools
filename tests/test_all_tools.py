@@ -20,6 +20,10 @@ import locale
 
 warnings.simplefilter("ignore")
 locale.setlocale(locale.LC_NUMERIC, '')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Path setup — make sure we can import from core/ and generated/
@@ -345,6 +349,10 @@ def test_utils_kwargs():
         # Test with spaces
         result = utils.get_kwargs("arg1 = value1, arg2 = value2")
         assert result == {'arg1': 'value1', 'arg2': 'value2'}, f"Spaces failed: {result}"
+
+        # Preserve meaningful whitespace inside values (especially LLM prompts)
+        result = utils.get_kwargs("system_prompt=You are a data analyst,debug=false")
+        assert result['system_prompt'] == 'You are a data analyst', f"Value whitespace was lost: {result}"
         
         # Test values containing '='
         result = utils.get_kwargs("key=val=ue,other=test")
@@ -560,9 +568,9 @@ def test_imports():
         import _machine_learning
         
         results.record("Import all modules", True, duration=time.time()-t0)
-    except Exception as e:
+    except Exception:
         results.record("Import all modules", False,
-                       traceback.format_exc().split('\n')[-2], time.time()-t0)
+                       traceback.format_exc().strip(), time.time()-t0)
 
 
 # ===================================================================

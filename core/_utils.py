@@ -2,8 +2,6 @@ import os
 import sys
 import ast
 import time
-import string
-import locale
 import pickle
 import warnings
 import numpy as np
@@ -175,9 +173,15 @@ def get_kwargs(str_kwargs):
     if args[-1] == ',':
         args = args[:-1]
     
-    # The parameter and values are transformed into key value pairs
-    args = args.translate(str.maketrans('', '', string.whitespace)).split(",")
-    kwargs = dict([arg.split("=", 1) for arg in args if '=' in arg])
+    # Trim structural whitespace while preserving whitespace inside values.
+    # Removing all whitespace corrupted prompts such as
+    # ``system_prompt=You are a data analyst``.
+    kwargs = {}
+    for arg in args.split(","):
+        if '=' not in arg:
+            continue
+        key, value = arg.split("=", 1)
+        kwargs[key.strip()] = value.strip()
     
     return kwargs
 

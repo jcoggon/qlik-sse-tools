@@ -1,13 +1,12 @@
 import os
 import sys
-import time
-import string
-import locale
 import warnings
 import numpy as np
 import pandas as pd
-import _utils as utils
-import ServerSideExtension_pb2 as SSE
+try:
+    import ServerSideExtension_pb2 as SSE
+except ModuleNotFoundError:
+    from generated import ServerSideExtension_pb2 as SSE
 
 # Suppress warnings
 if not sys.warnoptions:
@@ -48,6 +47,29 @@ MODEL_MAP = {
     'imapa': IMAPA,
     'tsb': TSB,
 }
+
+REQUIRES_SEASON_LENGTH = {'mstl', 'seasonalnaive', 'seasonalwindowaverage'}
+
+
+def build_statsforecast_model(model_name, season_length=None, model_kwargs=None):
+    """Build a validated StatsForecast model for SSE and REST callers."""
+    normalized = model_name.lower()
+    model_class = MODEL_MAP.get(normalized)
+    if model_class is None:
+        raise ValueError(
+            f"Unknown model '{model_name}'. Available models: {', '.join(sorted(MODEL_MAP.keys()))}"
+        )
+    params = dict(model_kwargs or {})
+    if season_length is not None:
+        params['season_length'] = season_length
+    if normalized in REQUIRES_SEASON_LENGTH and season_length is None:
+        raise ValueError(
+            f"Model '{model_name}' requires season_length (for example 12 for monthly or 7 for daily)"
+        )
+    try:
+        return model_class(**params)
+    except TypeError as exc:
+        raise ValueError(f"Invalid parameters for {model_class.__name__}: {exc}") from exc
 
 
 class StatsForecastForQlik:
@@ -190,42 +212,8 @@ class StatsForecastForQlik:
         if self.take_log:
             self.input_df.loc[:, 'y'] = np.log(self.input_df.loc[:, 'y'].clip(lower=1e-10))
 
-        # Prepare data in statsforecast format: unique_id, ds, y
-        sf_df = self.input_df[['ds', 'y']].copy()
-        sf_df.insert(0, 'unique_id', 'series_1')
-
-        # Build the model
-        model_class = MODEL_MAP.get(self.model_name)
-        if model_class is None:
-            raise ValueError(
-                f"Unknown model '{self.model_name}'. "
-                f"Available models: {', '.join(sorted(MODEL_MAP.keys()))}"
-            )
-
-        # Pass season_length if the model supports it
-        model_params = dict(self.model_kwargs)
-        if self.season_length is not None:
-            model_params['season_length'] = self.season_length
-
-        # Models that require season_length
-        REQUIRES_SEASON_LENGTH = {'mstl', 'seasonalnaive', 'seasonalwindowaverage'}
-        if self.model_name in REQUIRES_SEASON_LENGTH and self.season_length is None:
-            raise ValueError(
-                f"Model '{self.model_name}' requires season_length parameter. "
-                f"Add season_length=<int> to your kwargs (e.g. season_length=12 for monthly, season_length=7 for daily)."
-            )
-
-        try:
-            model_instance = model_class(**model_params)
-        except TypeError as e:
-            # Some models don't accept extra kwargs — retry without them but warn
-            if model_params:
-                import sys
-                sys.stderr.write(
-                    f"Warning: {model_class.__name__} does not accept kwargs {list(model_params.keys())}. "
-                    f"Using defaults. ({e})\n"
-                )
-            model_instance = model_class()
+        sf_df = self._to_statsforecast_frame(self.input_df)
+        model_instance = self._build_model()
 
         # Create the StatsForecast object
         sf = StatsForecast(
@@ -258,6 +246,69 @@ class StatsForecastForQlik:
         response = self._build_response(historical, result)
 
         return response
+
+    def _to_statsforecast_frame(self, frame):
+        sf_df = frame[['ds', 'y']].copy()
+        sf_df.insert(0, 'unique_id', 'series_1')
+        return sf_df
+
+    def _build_model(self):
+        return build_statsforecast_model(
+            self.model_name,
+            season_length=self.season_length,
+            model_kwargs=self.model_kwargs,
+        )
+
+    def forecast_table(self):
+        """Return future timestamps, point forecasts, and calibrated/native intervals."""
+        if len(self.input_df) < 2:
+            raise ValueError('At least two historical rows are required for interval forecasting')
+        sf_df = self._to_statsforecast_frame(self.input_df)
+        sf = StatsForecast(models=[self._build_model()], freq=self.freq, n_jobs=self.n_jobs)
+        forecast = sf.forecast(df=sf_df, h=self.periods, level=self.level)
+        model_col = MODEL_MAP[self.model_name].__name__
+        level = self.level[0]
+        lo_col = f'{model_col}-lo-{level}'
+        hi_col = f'{model_col}-hi-{level}'
+        if lo_col not in forecast or hi_col not in forecast:
+            raise ValueError(f"Model {model_col} did not return {level}% prediction intervals")
+        result = forecast[['ds', model_col, lo_col, hi_col]].copy()
+        result.columns = ['date', 'forecast', 'lower', 'upper']
+        if self.take_log:
+            result[['forecast', 'lower', 'upper']] = np.exp(result[['forecast', 'lower', 'upper']])
+        result['date'] = (result['date'] - self.qlik_cal_start) / pd.Timedelta(days=1)
+        self._send_table_description(result, 'StatsForecast-Intervals')
+        return result
+
+    def anomaly_table(self):
+        """Return fitted intervals and flag observations outside those intervals."""
+        history = self.request_df[['ds', 'y']].copy()
+        if len(history) < 8:
+            raise ValueError('At least eight historical rows are required for anomaly detection')
+        sf_df = self._to_statsforecast_frame(history)
+        sf = StatsForecast(models=[self._build_model()], freq=self.freq, n_jobs=self.n_jobs)
+        sf.forecast(df=sf_df, h=1, level=self.level, fitted=True)
+        fitted = sf.forecast_fitted_values()
+        model_col = MODEL_MAP[self.model_name].__name__
+        level = self.level[0]
+        lo_col = f'{model_col}-lo-{level}'
+        hi_col = f'{model_col}-hi-{level}'
+        if lo_col not in fitted or hi_col not in fitted:
+            raise ValueError(f"Model {model_col} did not return fitted {level}% prediction intervals")
+        result = fitted[['ds', 'y', model_col, lo_col, hi_col]].copy()
+        result.columns = ['date', 'actual', 'expected', 'lower', 'upper']
+        result['is_anomaly'] = (
+            (result['actual'] < result['lower']) | (result['actual'] > result['upper'])
+        ).astype(float)
+        result['date'] = (result['date'] - self.qlik_cal_start) / pd.Timedelta(days=1)
+        self._send_table_description(result, 'StatsForecast-Anomalies')
+        return result
+
+    def _send_table_description(self, frame, name):
+        table = SSE.TableDescription(name=name, numberOfRows=len(frame))
+        for column in frame.columns:
+            table.fields.add(name=column)
+        self.context.send_initial_metadata((('qlik-tabledescription-bin', table.SerializeToString()),))
 
     def _extract_result(self, forecast_df):
         """
@@ -296,7 +347,6 @@ class StatsForecastForQlik:
         """
         return_type = self.return_type.lower()
         n_hist = len(historical)
-        n_forecast = len(forecast)
         total = len(self.request_df)
 
         if return_type.startswith('y_then_'):

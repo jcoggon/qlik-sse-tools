@@ -28,7 +28,7 @@ To learn more about Raptor MCP and the broader platform around it, visit [raptor
 
 ## Rebuild highlights
 
-- Upgraded to Python `3.13+`.
+- Standardized on Python `3.13` while the native analytics stack completes Python 3.14 wheel support.
 - Refreshed the dependency stack for modern NumPy, Pandas, scikit-learn, Prophet, spaCy, OpenAI, Anthropic, and Firecrawl releases.
 - Added Azure OpenAI chat functions and Azure-hosted Claude chat functions.
 - Added Firecrawl-based web scraping, extraction, search, and agent functions.
@@ -39,21 +39,24 @@ To learn more about Raptor MCP and the broader platform around it, visit [raptor
 - Added Windows service install/uninstall scripts using Servy.
 - Added a persistent runtime temp directory for Prophet/CmdStanPy so long-running Windows services do not depend on the user temp folder.
 - Kept heavyweight components like TensorFlow/Keras lazily loaded so the core SSE can start more reliably.
+- Added locked project metadata, security scanning, cross-platform CI, gRPC health checks, and real protocol tests.
+- Added an authenticated REST façade for Qlik Cloud deployments.
+- Added Azure/OpenAI Responses API functions, forecast interval tables, and anomaly detection.
 
 ## Feature areas
 
 | Area | What is included |
 | --- | --- |
 | Core analytics | HDBSCAN clustering, geographic clustering, Pearson/correlation utilities, association rules |
-| Forecasting | Prophet, holiday-aware Prophet, multivariate Prophet, seasonality outputs, StatsForecast (`AutoARIMA`, `AutoETS`, `AutoTheta`, `MSTL`, Croston-family models, and more) |
+| Forecasting | Prophet, multivariate Prophet, StatsForecast point forecasts, interval tables, and anomaly detection |
 | Machine learning | End-to-end model setup, feature definition, fit, partial fit, predict, predict_proba, bulk prediction, cross-validation, grid search, confusion matrix, feature importances |
 | Deep learning | Keras layer definition, training history, sequence prediction support, lazy TensorFlow/Keras loading |
 | Text and NLP | spaCy entity extraction, model-based extraction, retraining workflows |
 | Pretrained inference | YAML-defined sklearn, Keras, or REST prediction endpoints callable from Qlik |
-| LLM integrations | Azure OpenAI chat and bulk chat, Azure AI Foundry Claude chat and bulk chat |
+| LLM integrations | Azure OpenAI chat, Responses API with strict JSON schemas, and Azure AI Foundry Claude |
 | Document and web intelligence | Firecrawl scrape, extract, search, agent modes, plus local PDF/Word/Excel/CSV parsing |
 
-The current SSE registry exposes `59` functions across these areas.
+The current SSE registry exposes `63` functions across these areas.
 
 ## Quick start
 
@@ -123,6 +126,8 @@ Qlik-Py-Start.bat
 
 The server listens on port `50055` by default.
 
+Run a non-listening diagnostic check with `cd core && ../qlik-py-env/bin/python __main__.py --check`. Port, worker count, message size, and shutdown grace are configurable through `.env`.
+
 ### 4. Configure the analytic connection in Qlik
 
 Use these defaults unless you intentionally change them:
@@ -152,6 +157,7 @@ The included [`.env.example`](.env.example) covers the currently supported exter
 | Azure OpenAI | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, optional `AZURE_OPENAI_API_VERSION` |
 | Azure AI Foundry Claude | `AZURE_FOUNDRY_API_KEY`, `AZURE_FOUNDRY_CLAUDE_API_ENDPOINT`, `AZURE_FOUNDRY_API_VERSION`, Claude deployment names |
 | Firecrawl | `FIRECRAWL_API_KEY` |
+| Qlik Cloud REST API | `QLIK_CLOUD_API_KEY`; bind and port are optional |
 
 If you only want classical ML, forecasting, clustering, or spaCy-based functions, you can leave the LLM and Firecrawl credentials unset.
 
@@ -169,13 +175,27 @@ or on Windows:
 Qlik-Py-Extras.bat --list
 ```
 
-Available extras include larger spaCy models, Jupyter, Plotly, Excel support, and deep-learning bundles.
+Available extras include larger spaCy models, Jupyter, Plotly, deep learning, and the Qlik Cloud API. TensorFlow/Keras are no longer forced into every core installation.
+
+### Qlik Cloud REST façade
+
+```bash
+./Qlik-Py-Extras.sh qlik_cloud
+export QLIK_CLOUD_API_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+./Qlik-Py-Cloud-Start.sh
+```
+
+The default bind is `127.0.0.1:8080`. Put it behind an HTTPS reverse proxy before exposing it beyond the host. See [`docs/Cloud-API.md`](docs/Cloud-API.md).
 
 ## Validation
 
 - [`USAGE.md`](USAGE.md): full SSE function reference and calling patterns
 - [`TESTING.md`](TESTING.md): setup, verification flow, and troubleshooting
+- [`CHANGELOG.md`](CHANGELOG.md): release history and upgrade highlights
 - [`tests/test_all_tools.py`](tests/test_all_tools.py): standalone smoke and compatibility suite
+- `tests/test_server_integration.py`: real health, capability, and function execution over gRPC
+- `tests/test_cloud_api.py`: authenticated REST forecast, anomaly, correlation, and Responses API checks
+- `.github/workflows/ci.yml`: Python 3.13 verification on Windows, Linux, and macOS
 
 ## Windows deployment
 

@@ -10,6 +10,8 @@ import locale
 import warnings
 from concurrent import futures
 
+from _version import __version__
+
 def _status(msg):
     """Print a startup status message and flush immediately."""
     sys.stdout.write(f'  {msg}\n')
@@ -38,6 +40,7 @@ _status('Loading gRPC and protobuf...')
 import ServerSideExtension_pb2 as SSE
 import ServerSideExtension_pb2_grpc as SSE_grpc
 import grpc
+from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 # Suppress warnings
 if not sys.warnoptions:
@@ -47,7 +50,6 @@ if not sys.warnoptions:
 _status('Loading NumPy, Pandas...')
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_string_dtype
 from pandas.api.types import is_numeric_dtype
 import _utils as utils
 
@@ -128,10 +130,12 @@ total = len(_MODULES)
 _status(f'{loaded}/{total} modules loaded. TensorFlow/Keras loaded on demand.')
 
 # Set the default port for this SSE Extension
-_DEFAULT_PORT = '50055'
+_DEFAULT_PORT = os.environ.get('QLIK_SSE_PORT', '50055')
 
 # Set the maximum message length for gRPC in bytes
-MAX_MESSAGE_LENGTH = 10 * 1024 * 1024
+MAX_MESSAGE_LENGTH = int(os.environ.get('QLIK_SSE_MAX_MESSAGE_MB', '10')) * 1024 * 1024
+DEFAULT_WORKERS = int(os.environ.get('QLIK_SSE_WORKERS', '10'))
+SHUTDOWN_GRACE_SECONDS = int(os.environ.get('QLIK_SSE_SHUTDOWN_GRACE_SECONDS', '5'))
 
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 _MINFLOAT = float('-inf')
@@ -226,7 +230,11 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             55: '_firecrawl',
             56: '_firecrawl',
             57: '_firecrawl',
-            58: '_firecrawl'
+            58: '_firecrawl',
+            59: '_responses',
+            60: '_responses',
+            61: '_statsforecast_table',
+            62: '_statsforecast_table'
         }
 
     """
@@ -970,6 +978,30 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             yield SSE.BundledRows(rows=response_rows[i : i + rows_per_bundle])
 
     @staticmethod
+    def _responses(request, context):
+        """Execute Azure/OpenAI Responses API scalar or bulk functions."""
+        _require_module('LLM Integrations')
+        request_list = [request_rows for request_rows in request]
+        function = ExtensionService._get_function_id(context)
+        llm = LLMForQlik(request_list, context)
+
+        if function == 59:
+            response = llm.response(load_script=False)
+            dtypes = ["str"]
+        elif function == 60:
+            response = llm.response(load_script=True)
+            dtypes = ["str", "str", "str"]
+        else:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, f'Unsupported Responses function id: {function}')
+
+        response_rows = utils.get_response_rows(response.values.tolist(), dtypes)
+        num_request_bundles = len(request_list)
+        num_rows = len(response_rows)
+        rows_per_bundle = num_rows // num_request_bundles if num_rows >= num_request_bundles else num_rows
+        for i in range(0, num_rows, rows_per_bundle):
+            yield SSE.BundledRows(rows=response_rows[i : i + rows_per_bundle])
+
+    @staticmethod
     def _statsforecast(request, context):
         """
         Provide a timeseries forecast using Nixtla's StatsForecast library. Scalar function.
@@ -1023,6 +1055,29 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             rows_per_bundle = num_rows
 
         # Stream response as BundledRows
+        for i in range(0, num_rows, rows_per_bundle):
+            yield SSE.BundledRows(rows=response_rows[i : i + rows_per_bundle])
+
+    @staticmethod
+    def _statsforecast_table(request, context):
+        """Return full forecast intervals or fitted anomaly rows as tensor functions."""
+        _require_module('StatsForecast')
+        request_list = [request_rows for request_rows in request]
+        function = ExtensionService._get_function_id(context)
+        predictor = StatsForecastForQlik(request_list, context)
+        if function == 61:
+            response = predictor.forecast_table()
+            dtypes = ['num', 'num', 'num', 'num']
+        elif function == 62:
+            response = predictor.anomaly_table()
+            dtypes = ['num', 'num', 'num', 'num', 'num', 'num']
+        else:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, f'Unsupported StatsForecast function id: {function}')
+
+        response_rows = utils.get_response_rows(response.values.tolist(), dtypes)
+        num_request_bundles = len(request_list)
+        num_rows = len(response_rows)
+        rows_per_bundle = num_rows // num_request_bundles if num_rows >= num_request_bundles else num_rows
         for i in range(0, num_rows, rows_per_bundle):
             yield SSE.BundledRows(rows=response_rows[i : i + rows_per_bundle])
 
@@ -1184,7 +1239,7 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
         # Set values for pluginIdentifier and pluginVersion
         self.capabilities = SSE.Capabilities(allowScript=False,
                                         pluginIdentifier='Qlik Python Tools',
-                                        pluginVersion='v3.0.0')
+                                        pluginVersion=f'v{__version__}')
 
         # If user defined functions supported, add the definitions to the message
         with open(self.function_definitions) as json_file:
@@ -1215,26 +1270,31 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
         """
         # Retrieve function id
         func_id = self._get_function_id(context)
+        handler_name = self.functions.get(func_id)
+        if handler_name is None:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, f'Unknown SSE function id: {func_id}')
         logging.info(self._get_call_info(context))
-        logging.info('ExecuteFunction (functionId: {}, {})'.format(func_id, self.functions[func_id]))
+        logging.info('ExecuteFunction (functionId: {}, {})'.format(func_id, handler_name))
         
-        return getattr(self, self.functions[func_id])(request_iterator, context)
+        return getattr(self, handler_name)(request_iterator, context)
 
     """
     Implementation of the Server connecting to gRPC.
     """
 
-    def Serve(self, port, pem_dir):
+    def Serve(self, port, pem_dir, workers=DEFAULT_WORKERS, max_message_length=MAX_MESSAGE_LENGTH):
         """
         Server
         :param port: port to listen on.
         :param pem_dir: Directory including certificates
         :return: None
         """
-        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10),\
-        options=[('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH)])
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=workers),
+        options=[('grpc.max_send_message_length', max_message_length),('grpc.max_receive_message_length', max_message_length)])
         
         SSE_grpc.add_ConnectorServicer_to_server(self, server)
+        health_servicer = health.HealthServicer()
+        health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
 
         if pem_dir:
             # Secure connection
@@ -1245,14 +1305,19 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             with open(os.path.join(pem_dir, 'root_cert.pem'), 'rb') as f:
                 root_cert = f.read()
             credentials = grpc.ssl_server_credentials([(private_key, cert_chain)], root_cert, True)
-            server.add_secure_port('[::]:{}'.format(port), credentials)
+            bound_port = server.add_secure_port('[::]:{}'.format(port), credentials)
             logging.info('*** Running server in secure mode on port: {} ***'.format(port))
         else:
             # Insecure connection
-            server.add_insecure_port('[::]:{}'.format(port))
+            bound_port = server.add_insecure_port('[::]:{}'.format(port))
             logging.info('*** Running server in insecure mode on port: {} ***'.format(port))
 
+        if bound_port == 0:
+            raise RuntimeError(f'Could not bind the SSE server to port {port}')
+
         server.start()
+        health_servicer.set('', health_pb2.HealthCheckResponse.SERVING)
+        health_servicer.set('qlik.sse.Connector', health_pb2.HealthCheckResponse.SERVING)
 
         # Print startup summary to console
         secure_str = 'secure' if pem_dir else 'insecure'
@@ -1284,6 +1349,9 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             f'  Status:      RUNNING\n'
             f'  Port:        {port}\n'
             f'  Mode:        {secure_str}\n'
+            f'  Workers:     {workers}\n'
+            f'  Max message: {max_message_length // (1024 * 1024)} MB\n'
+            f'  Health:      grpc.health.v1.Health/Check\n'
             f'{sep}\n'
             f'  Python:      {sys.version.split()[0]}\n'
             f'  gRPC:        {grpc.__version__}\n'
@@ -1311,7 +1379,8 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
                 time.sleep(_ONE_DAY_IN_SECONDS)
         except KeyboardInterrupt:
             print('\nShutting down server...')
-            server.stop(0)
+            health_servicer.enter_graceful_shutdown()
+            server.stop(SHUTDOWN_GRACE_SECONDS).wait()
             print('Server stopped.')
 
 class AAIException(Exception):
@@ -1325,10 +1394,38 @@ if __name__ == '__main__':
     parser.add_argument('--port', nargs='?', default=_DEFAULT_PORT)
     parser.add_argument('--pem_dir', nargs='?')
     parser.add_argument('--definition_file', nargs='?', default='functions.json')
+    parser.add_argument('--workers', type=int, default=DEFAULT_WORKERS)
+    parser.add_argument('--max_message_mb', type=int, default=MAX_MESSAGE_LENGTH // (1024 * 1024))
+    parser.add_argument('--check', action='store_true', help='Print startup diagnostics as JSON and exit')
+    parser.add_argument('--require_tls', action='store_true', help='Refuse to start unless --pem_dir is configured')
     args = parser.parse_args()
 
     # need to locate the file when script is called from outside it's location dir.
     def_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.definition_file)
 
+    if args.require_tls and not args.pem_dir:
+        parser.error('--require_tls requires --pem_dir')
+
+    if args.check:
+        with open(def_file, encoding='utf-8') as f:
+            function_count = len(json.load(f)['Functions'])
+        print(json.dumps({
+            'status': 'ok' if all(_MODULES.values()) else 'degraded',
+            'version': __version__,
+            'python': sys.version.split()[0],
+            'function_count': function_count,
+            'modules': _MODULES,
+            'port': str(args.port),
+            'workers': args.workers,
+            'max_message_mb': args.max_message_mb,
+            'tls_configured': bool(args.pem_dir),
+        }, sort_keys=True))
+        raise SystemExit(0 if all(_MODULES.values()) else 1)
+
     calc = ExtensionService(def_file)
-    calc.Serve(args.port, args.pem_dir)
+    calc.Serve(
+        args.port,
+        args.pem_dir,
+        workers=args.workers,
+        max_message_length=args.max_message_mb * 1024 * 1024,
+    )

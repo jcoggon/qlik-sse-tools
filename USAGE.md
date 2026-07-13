@@ -1154,6 +1154,19 @@ All of these can be passed as `estimator=Name` in `sklearn_Setup`:
 | 47 | `LLM_Chat_Bulk` | Tensor | LLM (GPT) |
 | 48 | `LLM_Claude_Chat` | Scalar | LLM (Claude) |
 | 49 | `LLM_Claude_Chat_Bulk` | Tensor | LLM (Claude) |
+| 50 | `StatsForecast` | Scalar | Forecasting |
+| 51 | `Firecrawl_Scrape` | Scalar | Web and documents |
+| 52 | `Firecrawl_Scrape_Bulk` | Tensor | Web and documents |
+| 53 | `Firecrawl_Extract` | Scalar | Web and documents |
+| 54 | `Firecrawl_Extract_Bulk` | Tensor | Web and documents |
+| 55 | `Firecrawl_Search` | Scalar | Web search |
+| 56 | `Firecrawl_Search_Bulk` | Tensor | Web search |
+| 57 | `Firecrawl_Agent` | Scalar | Web research |
+| 58 | `Firecrawl_Agent_Bulk` | Tensor | Web research |
+| 59 | `LLM_Response` | Scalar | Responses API |
+| 60 | `LLM_Response_Bulk` | Tensor | Responses API |
+| 61 | `StatsForecast_Intervals` | Tensor | Forecasting |
+| 62 | `StatsForecast_Anomalies` | Tensor | Anomaly detection |
 
 ---
 

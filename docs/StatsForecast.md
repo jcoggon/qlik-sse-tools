@@ -7,6 +7,8 @@
 | Function | Qlik use | Parameters |
 | --- | --- | --- |
 | `StatsForecast` | Chart expression | date, value, kwargs |
+| `StatsForecast_Intervals` | Load script | date, value, kwargs |
+| `StatsForecast_Anomalies` | Load script | date, value, kwargs |
 
 Example:
 
@@ -66,6 +68,22 @@ Additional kwargs are passed to the selected model when supported.
 | explicit StatsForecast column name | Return a specific column if present |
 
 Historical rows return null for plain forecast outputs and preserve actuals when using `y_then_*` return modes.
+
+## Interval And Anomaly Tables
+
+`StatsForecast_Intervals` returns `date`, `forecast`, `lower`, and `upper` for the requested future periods:
+
+```qlik
+ForecastBands:
+Extension <AAI>.StatsForecast_Intervals(ForecastInput{Date, Value, Args});
+```
+
+`StatsForecast_Anomalies` fits the historical series and returns `date`, `actual`, `expected`, `lower`, `upper`, and numeric `is_anomaly`. An observation is flagged when it falls outside the requested fitted interval.
+
+```qlik
+AnomalyRows:
+Extension <AAI>.StatsForecast_Anomalies(HistoryInput{Date, Value, Args});
+```
 
 ## Agent Notes
 

@@ -67,9 +67,33 @@ Expected output (all 16 tests should pass):
 
 ---
 
+## Integration And Product-Surface Tests
+
+The original 16-test suite is supplemented by pytest integration coverage:
+
+```bash
+./qlik-py-env/bin/python -m pytest \
+  tests/test_registry.py \
+  tests/test_version.py \
+  tests/test_server_integration.py \
+  tests/test_llm_responses.py \
+  tests/test_statsforecast_extensions.py \
+  tests/test_cloud_api.py
+```
+
+These checks validate registry/handler parity, runtime versioning, diagnostics, standard gRPC health, capability negotiation, a real Pearson execution, Responses structured output, interval/anomaly tables, REST authentication, and Cloud API responses.
+
+---
+
 ## Prerequisites (Fresh System Setup)
 
 Follow **every step** below. Skipping any will cause test failures.
+
+On macOS, install the OpenMP runtime required by LightGBM before installing the Python requirements:
+
+```bash
+brew install libomp
+```
 
 ### Step 1: Initialize the virtual environment
 This creates `qlik-py-env/`, installs all Python packages, and copies source code into the venv.
