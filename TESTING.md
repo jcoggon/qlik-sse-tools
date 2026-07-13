@@ -89,6 +89,12 @@ These checks validate registry/handler parity, runtime versioning, diagnostics, 
 
 Follow **every step** below. Skipping any will cause test failures.
 
+On macOS, install the OpenMP runtime required by LightGBM before installing the Python requirements:
+
+```bash
+brew install libomp
+```
+
 ### Step 1: Initialize the virtual environment
 This creates `qlik-py-env/`, installs all Python packages, and copies source code into the venv.
 ```bash

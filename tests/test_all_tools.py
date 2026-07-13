@@ -564,9 +564,9 @@ def test_imports():
         import _machine_learning
         
         results.record("Import all modules", True, duration=time.time()-t0)
-    except Exception as e:
+    except Exception:
         results.record("Import all modules", False,
-                       traceback.format_exc().split('\n')[-2], time.time()-t0)
+                       traceback.format_exc().strip(), time.time()-t0)
 
 
 # ===================================================================

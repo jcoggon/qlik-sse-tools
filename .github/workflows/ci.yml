@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
+      - name: Install macOS native runtime
+        if: runner.os == 'macOS'
+        run: brew install libomp
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pip check
