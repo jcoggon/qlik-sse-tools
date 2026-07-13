@@ -4,6 +4,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import grpc
@@ -32,11 +33,12 @@ def _server_env():
 
 
 def _start_server(port):
+    process_log = tempfile.TemporaryFile(mode="w+t", encoding="utf-8")
     process = subprocess.Popen(
         [sys.executable, "-u", "__main__.py", "--port", str(port), "--workers", "2"],
         cwd=CORE,
         env=_server_env(),
-        stdout=subprocess.PIPE,
+        stdout=process_log,
         stderr=subprocess.STDOUT,
         text=True,
     )
@@ -45,9 +47,12 @@ def _start_server(port):
         grpc.channel_ready_future(channel).result(timeout=30)
     except Exception:
         process.terminate()
-        output = process.communicate(timeout=10)[0]
+        process.wait(timeout=10)
+        process_log.seek(0)
+        output = process_log.read()
+        process_log.close()
         raise AssertionError(f"SSE server did not become ready:\n{output}")
-    return process, channel
+    return process, channel, process_log
 
 
 def _stop_server(process):
@@ -83,7 +88,7 @@ def test_diagnostics_command_reports_runtime_state():
 
 def test_grpc_health_capabilities_and_function_execution():
     port = _free_port()
-    process, channel = _start_server(port)
+    process, channel, process_log = _start_server(port)
     try:
         health_stub = health_pb2_grpc.HealthStub(channel)
         health_response = health_stub.Check(
@@ -121,3 +126,4 @@ def test_grpc_health_capabilities_and_function_execution():
     finally:
         channel.close()
         _stop_server(process)
+        process_log.close()
