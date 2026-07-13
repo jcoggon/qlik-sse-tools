@@ -4,6 +4,8 @@ This folder is the Markdown reference set for the Qlik Python Tools Server-Side 
 
 Use these documents together with the top-level `README.md`, `USAGE.md`, `TESTING.md`, and `core/functions.json`.
 
+Deployment operators should also read [`Operations.md`](Operations.md). Qlik Cloud REST deployments are covered separately in [`Cloud-API.md`](Cloud-API.md).
+
 ## What The SSE Provides
 
 The service exposes Python analytics through Qlik Sense Client-Managed analytic connections. Qlik sends expression or load-script data over gRPC, the SSE runs the configured Python capability, and Qlik receives scalar values or tabular results.
@@ -12,12 +14,12 @@ The function catalog currently includes:
 
 | Area | Main docs | Function families |
 | --- | --- | --- |
-| Forecasting | `Prophet.md`, `StatsForecast.md`, `Keras.md` | `Prophet`, `Prophet_Holidays`, `Prophet_Multivariate`, `StatsForecast`, sequence prediction |
+| Forecasting | `Prophet.md`, `StatsForecast.md`, `Keras.md` | `Prophet`, `StatsForecast`, interval tables, anomaly detection, sequence prediction |
 | Machine learning | `scikit-learn.md`, `Pretrained.md` | `sklearn_*`, `Predict`, `Bulk_Predict`, model metrics and feature expressions |
 | Natural language | `NER.md` | `spaCy_Get_Entities`, `spaCy_Get_Entities_From_Model`, `spaCy_Retrain` |
 | Association and correlation | `Association-Rules.md`, `Correlation.md` | `Association_Rules`, `Correlation`, `Pearson` |
 | Clustering | `Clustering.md` | `Cluster`, `Cluster_by_Dim`, `Cluster_Geo` |
-| LLM integrations | `LLM.md` | `LLM_Chat`, `LLM_Chat_Bulk`, `LLM_Claude_Chat`, `LLM_Claude_Chat_Bulk` |
+| LLM integrations | `LLM.md` | Chat Completions, Responses API, structured output, Claude |
 | Web and document extraction | `Firecrawl.md` | `Firecrawl_Scrape`, `Firecrawl_Extract`, `Firecrawl_Search`, `Firecrawl_Agent` |
 
 ## How An AI Agent Should Read These Docs
@@ -57,7 +59,7 @@ Some legacy functions also accept comma-delimited kwargs. Prefer pipe delimiters
 - Default gRPC port: `50055`.
 - Runtime folder after initialization: `qlik-py-env`.
 - Runtime logs are written under `qlik-py-env/core/logs` when running from the installed environment.
-- Python runtime target: Python `3.13+`.
+- Python runtime target: Python `3.13`.
 - The Windows service helper uses Servy and runs `qlik-py-env/core/__main__.py`. Servy is not bundled in the SSE zip; install it system-wide or place the Servy x64 installer beside `Qlik-Py-Service-Install.bat`.
 - Prophet/CmdStanPy temp files use a persistent runtime temp folder by default: `qlik-py-env/tmp`.
 - Set `QLIK_PY_TOOLS_TEMP_DIR` in `.env` only when an operator needs to force a different persistent temp location.
@@ -79,6 +81,7 @@ Only configure credentials for integrations that will be used.
 | `AZURE_CLAUDE_SONNET` | Claude model alias |
 | `AZURE_FOUNDRY_CLAUDE_API_ENDPOINT` | Azure AI Foundry Claude functions |
 | `FIRECRAWL_API_KEY` | Firecrawl web scrape/search/extract/agent functions |
+| `QLIK_CLOUD_API_KEY` | Authentication for the optional Qlik Cloud REST façade |
 | `QLIK_PY_TOOLS_TEMP_DIR` | Optional persistent temp override |
 
 ## Model State

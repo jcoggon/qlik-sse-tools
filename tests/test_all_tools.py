@@ -345,6 +345,10 @@ def test_utils_kwargs():
         # Test with spaces
         result = utils.get_kwargs("arg1 = value1, arg2 = value2")
         assert result == {'arg1': 'value1', 'arg2': 'value2'}, f"Spaces failed: {result}"
+
+        # Preserve meaningful whitespace inside values (especially LLM prompts)
+        result = utils.get_kwargs("system_prompt=You are a data analyst,debug=false")
+        assert result['system_prompt'] == 'You are a data analyst', f"Value whitespace was lost: {result}"
         
         # Test values containing '='
         result = utils.get_kwargs("key=val=ue,other=test")

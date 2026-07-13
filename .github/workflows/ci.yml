@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pip check
+      - run: python tests/test_all_tools.py
+      - run: python -m pytest tests/test_registry.py tests/test_version.py tests/test_server_integration.py tests/test_llm_responses.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py
+      - run: python -m ruff check core/_llm.py core/_statsforecast.py core/cloud_api.py tests/test_llm_responses.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py tests/test_server_integration.py
+      - run: python -m ruff check --select F core/__main__.py core/_utils.py
+      - run: python -m compileall -q core generated tests scripts
+      - run: python scripts/package_sse.py --skip-tests --output-dir dist
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install pip-audit==2.10.0
+      - run: python -m pip_audit --strict -r requirements.txt
+      - run: python -m pip_audit --strict -r requirements-cloud.txt
+      - run: python -m pip_audit --strict -r requirements-deep-learning.txt
+
+  python-314-compatibility-probe:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip compile --python 3.14 requirements.txt -o /tmp/qlik-py-tools-314.txt

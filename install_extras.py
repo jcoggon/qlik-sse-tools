@@ -15,6 +15,8 @@ import subprocess
 import sys
 import os
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # ---------------------------------------------------------------------------
 # Package definitions
 # ---------------------------------------------------------------------------
@@ -66,15 +68,22 @@ EXTRAS = {
         "name": "Deep Learning (TensorFlow + Keras)",
         "description": "Neural network models via Keras/TensorFlow — 500+ MB",
         "category": "Machine Learning",
-        "install": lambda: pip_install("tensorflow", "keras", "scikeras", "h5py"),
+        "install": lambda: pip_install_requirements("requirements-deep-learning.txt"),
         "check": lambda: module_check("tensorflow"),
     },
     "plotly": {
         "name": "Interactive Visualizations (Plotly)",
         "description": "Interactive charts and dashboards",
         "category": "Visualization",
-        "install": lambda: pip_install("plotly", "matplotlib"),
+        "install": lambda: pip_install("plotly==6.9.0"),
         "check": lambda: module_check("plotly"),
+    },
+    "qlik_cloud": {
+        "name": "Qlik Cloud REST Façade",
+        "description": "Authenticated REST inference API for Qlik Cloud analytic connections",
+        "category": "Deployment",
+        "install": lambda: pip_install_requirements("requirements-cloud.txt"),
+        "check": lambda: module_check("fastapi") and module_check("uvicorn"),
     },
 }
 
@@ -110,6 +119,18 @@ def pip_install(*packages):
     """Install packages via pip."""
     cmd = [sys.executable, "-m", "pip", "install"] + list(packages)
     return subprocess.run(cmd, capture_output=False).returncode == 0
+
+
+def pip_install_requirements(filename):
+    """Install a pinned optional dependency bundle from the repository."""
+    path = os.path.join(SCRIPT_DIR, filename)
+    if not os.path.exists(path):
+        print(f"  Missing requirements file: {path}")
+        return False
+    return subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-r", path],
+        capture_output=False,
+    ).returncode == 0
 
 
 def spacy_download(model):

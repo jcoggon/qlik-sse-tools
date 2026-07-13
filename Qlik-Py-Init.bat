@@ -1,15 +1,15 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM Check for Python 3.13+ using multiple methods
+REM Check for Python 3.13 using multiple methods
 
 REM Method 1: Try the Windows Python Launcher (py.exe) - most reliable on Windows
 where py >nul 2>&1
 if !ERRORLEVEL! equ 0 (
-    for /f "tokens=2 delims= " %%v in ('py -3 --version 2^>^&1') do set "PY_VER=%%v"
+    for /f "tokens=2 delims= " %%v in ('py -3.13 --version 2^>^&1') do set "PY_VER=%%v"
     for /f "tokens=1,2 delims=." %%a in ("!PY_VER!") do (
-        if %%a GEQ 3 if %%b GEQ 13 (
-            set "PYTHON_CMD=py -3"
+        if %%a EQU 3 if %%b EQU 13 (
+            set "PYTHON_CMD=py -3.13"
             goto :python_found
         )
     )
@@ -20,7 +20,7 @@ where python >nul 2>&1
 if !ERRORLEVEL! equ 0 (
     for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set "PY_VER=%%v"
     for /f "tokens=1,2 delims=." %%a in ("!PY_VER!") do (
-        if %%a GEQ 3 if %%b GEQ 13 (
+        if %%a EQU 3 if %%b EQU 13 (
             set "PYTHON_CMD=python"
             goto :python_found
         )
@@ -37,7 +37,7 @@ for %%P in (
     if exist %%P (
         for /f "tokens=2 delims= " %%v in ('%%P --version 2^>^&1') do set "PY_VER=%%v"
         for /f "tokens=1,2 delims=." %%a in ("!PY_VER!") do (
-            if %%a GEQ 3 if %%b GEQ 13 (
+            if %%a EQU 3 if %%b EQU 13 (
                 set "PYTHON_CMD=%%~P"
                 goto :python_found
             )
@@ -45,7 +45,7 @@ for %%P in (
     )
 )
 
-echo ERROR: Python 3.13 or later is required but not found.
+echo ERROR: Python 3.13 is required but not found.
 echo.
 echo Python must be accessible via one of:
 echo   - The 'py' launcher (installed by default with Python on Windows)
@@ -55,7 +55,7 @@ echo.
 echo If Python is installed, try reinstalling with "Add Python to PATH" checked,
 echo or ensure the Python Launcher is included in the install.
 echo.
-echo Download Python 3.13+ from https://www.python.org/downloads/
+echo Download Python 3.13 from https://www.python.org/downloads/
 pause
 exit /b 1
 

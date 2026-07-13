@@ -643,6 +643,49 @@
         "c_prompt": 0,
         "d_other_args": 0
       }
+    },
+    {
+      "Id": 59,
+      "Name": "LLM_Response",
+      "Type": 0,
+      "ReturnType": 0,
+      "Params": {
+        "a_prompt": 0,
+        "b_other_args": 0
+      }
+    },
+    {
+      "Id": 60,
+      "Name": "LLM_Response_Bulk",
+      "Type": 2,
+      "ReturnType": 0,
+      "Params": {
+        "a_key": 0,
+        "b_prompt": 0,
+        "c_other_args": 0
+      }
+    },
+    {
+      "Id": 61,
+      "Name": "StatsForecast_Intervals",
+      "Type": 2,
+      "ReturnType": 1,
+      "Params": {
+        "a_date": 2,
+        "b_value": 1,
+        "c_other_args": 0
+      }
+    },
+    {
+      "Id": 62,
+      "Name": "StatsForecast_Anomalies",
+      "Type": 2,
+      "ReturnType": 1,
+      "Params": {
+        "a_date": 2,
+        "b_value": 1,
+        "c_other_args": 0
+      }
     }
   ]
 }

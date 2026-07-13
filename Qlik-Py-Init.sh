@@ -1,14 +1,15 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Require Python 3.13+
+# Require Python 3.13. The current native analytics stack does not yet publish
+# a complete set of Python 3.14 wheels (notably spaCy).
 PYTHON_CMD=""
 for cmd in python3.13 python3; do
     if command -v "$cmd" &>/dev/null; then
         PY_VER=$($cmd --version 2>&1 | grep -oE '[0-9]+\.[0-9]+')
         PY_MAJOR=$(echo "$PY_VER" | cut -d. -f1)
         PY_MINOR=$(echo "$PY_VER" | cut -d. -f2)
-        if [ "$PY_MAJOR" -ge 3 ] && [ "$PY_MINOR" -ge 13 ]; then
+        if [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -eq 13 ]; then
             PYTHON_CMD="$cmd"
             break
         fi
@@ -16,8 +17,8 @@ for cmd in python3.13 python3; do
 done
 
 if [ -z "$PYTHON_CMD" ]; then
-    echo "ERROR: Python 3.13 or later is required but not found."
-    echo "Please install Python 3.13+ and try again."
+    echo "ERROR: Python 3.13 is required but not found."
+    echo "Please install Python 3.13 and try again."
     echo "  macOS:   brew install python@3.13"
     echo "  Linux:   See https://www.python.org/downloads/"
     exit 1

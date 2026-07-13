@@ -2,14 +2,15 @@ import os
 import sys
 import time
 import warnings
-import numpy as np
+import base64
+import json
 import pandas as pd
 
 # Suppress warnings
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
-from openai import AzureOpenAI
+from openai import AzureOpenAI, OpenAI
 import anthropic
 
 import _utils as utils
@@ -31,7 +32,7 @@ class LLMForQlik:
     A class to provide Azure OpenAI LLM capabilities for Qlik.
     Sends prompts to an Azure OpenAI deployment and returns the response.
     """
-    
+
     # Counter used to name log files for instances of the class
     log_no = 0
 
@@ -42,7 +43,7 @@ class LLMForQlik:
         :param context:
         :Sets up the input data frame and parameters based on the request
         """
-        
+
         # Set the request and context variables for this object instance
         self.request = request
         self.context = context
@@ -57,11 +58,23 @@ class LLMForQlik:
         )
         self.deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
 
+        # The Responses API uses Azure's OpenAI-compatible v1 endpoint. Keep a
+        # separate client so the existing Chat Completions functions remain
+        # backward compatible with AzureOpenAI and api-version deployments.
+        responses_base_url = os.environ.get("AZURE_OPENAI_RESPONSES_BASE_URL")
+        if not responses_base_url:
+            endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+            responses_base_url = f"{endpoint}/openai/v1/" if endpoint else None
+        self.responses_client = OpenAI(
+            api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+            base_url=responses_base_url,
+        )
+
     def chat(self, load_script=False):
         """
         Send a prompt to the Azure OpenAI LLM and return the response.
         Can be called from a chart expression or the load script in Qlik.
-        
+
         :Qlik expression examples:
         :<AAI Connection Name>.LLM_Chat('Summarize the following sales data: ' & concat(SalesInfo, '; '), 'debug=false')
         :<AAI Connection Name>.LLM_Chat('What reorder quantity do you recommend for product ' & ProductName & '?', 'system_prompt=You are an inventory management expert.')
@@ -75,7 +88,7 @@ class LLMForQlik:
             # Chart expression variant
             row_template = ['strData', 'strData']
             col_headers = ['prompt', 'kwargs']
-        
+
         # Create a Pandas DataFrame for the request data
         self.request_df = utils.request_df(self.request, row_template, col_headers)
 
@@ -83,7 +96,7 @@ class LLMForQlik:
         if 'kwargs' in self.request_df.columns:
             kwargs = self.request_df.loc[0, 'kwargs']
             self._set_params(kwargs)
-        
+
         # Print the request dataframe to the logs
         if self.debug:
             self._print_log(3)
@@ -93,22 +106,22 @@ class LLMForQlik:
 
         for i in self.request_df.index:
             prompt = self.request_df.loc[i, 'prompt']
-            
+
             try:
                 response_text = self._call_llm(prompt)
             except Exception as e:
                 response_text = "Error: {}".format(str(e))
                 if self.debug:
                     self._print_exception("LLM call failed", e)
-            
+
             if load_script:
                 responses.append((self.request_df.loc[i, 'key'], prompt, response_text))
             else:
                 responses.append(response_text)
-        
+
         if load_script:
             self.response_df = pd.DataFrame(responses, columns=['key', 'prompt', 'response'])
-            
+
             # Send the response table description to Qlik
             self._send_table_description("chat_bulk")
         else:
@@ -130,9 +143,9 @@ class LLMForQlik:
         # Add system prompt if specified
         if self.system_prompt:
             messages.append({"role": "system", "content": self.system_prompt})
-        
+
         messages.append({"role": "user", "content": prompt})
-        
+
         response = self.client.chat.completions.create(
             model=self.deployment,
             messages=messages,
@@ -142,36 +155,110 @@ class LLMForQlik:
 
         return response.choices[0].message.content
 
+    def response(self, load_script=False):
+        """Call the Azure/OpenAI Responses API, optionally with strict JSON output."""
+        if load_script:
+            row_template = ['strData', 'strData', 'strData']
+            col_headers = ['key', 'prompt', 'kwargs']
+        else:
+            row_template = ['strData', 'strData']
+            col_headers = ['prompt', 'kwargs']
+
+        self.request_df = utils.request_df(self.request, row_template, col_headers)
+        kwargs = self.request_df.loc[0, 'kwargs'] if 'kwargs' in self.request_df.columns else ''
+        self._set_params(kwargs)
+
+        responses = []
+        for i in self.request_df.index:
+            prompt = self.request_df.loc[i, 'prompt']
+            try:
+                response_text = self._call_response(prompt)
+            except Exception as e:
+                response_text = "Error: {}".format(str(e))
+                if self.debug:
+                    self._print_exception("Responses API call failed", e)
+
+            if load_script:
+                responses.append((self.request_df.loc[i, 'key'], prompt, response_text))
+            else:
+                responses.append(response_text)
+
+        if load_script:
+            self.response_df = pd.DataFrame(responses, columns=['key', 'prompt', 'response'])
+            self._send_table_description("chat_bulk")
+        else:
+            self.response_df = pd.Series(responses)
+        return self.response_df
+
+    def _call_response(self, prompt):
+        api_kwargs = {
+            "model": self.deployment,
+            "input": prompt,
+            "max_output_tokens": self.max_tokens,
+            "store": self.store,
+        }
+        if self.system_prompt:
+            api_kwargs["instructions"] = self.system_prompt
+        if self.previous_response_id:
+            api_kwargs["previous_response_id"] = self.previous_response_id
+        if self.temperature_explicit:
+            api_kwargs["temperature"] = self.temperature
+        if self.json_schema:
+            api_kwargs["text"] = {
+                "format": {
+                    "type": "json_schema",
+                    "name": self.json_schema_name,
+                    "schema": self.json_schema,
+                    "strict": True,
+                }
+            }
+
+        response = self.responses_client.responses.create(**api_kwargs)
+        return response.output_text
+
     def _set_params(self, kwargs):
         """
         Set input parameters based on the request.
         """
-        
+
         # If key word arguments were included in the request, get the parameters and values
         self.kwargs = {} if len(kwargs) == 0 else utils.get_kwargs(kwargs)
-            
+
         # Set the debug option for generating execution logs
         self.debug = False if 'debug' not in self.kwargs else ('true' == self.kwargs.pop('debug').lower())
-            
+
         # Additional information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
             self.__class__.log_no += 1
             self.logfile = os.path.join(os.getcwd(), 'logs', 'LLM Log {}.txt'.format(self.log_no))
             self._print_log(1)
-        
+
         # Set the system prompt for the LLM
         self.system_prompt = self.kwargs.pop('system_prompt', None)
 
         # Set the temperature for the LLM (controls randomness, 0.0 = deterministic, 1.0 = creative)
+        self.temperature_explicit = 'temperature' in self.kwargs
         self.temperature = float(self.kwargs.pop('temperature', '0.7'))
 
         # Set the max tokens for the LLM response
         self.max_tokens = int(self.kwargs.pop('max_tokens', '2048'))
 
+        # Responses API options. JSON schemas are base64url encoded so their
+        # commas do not conflict with the SSE kwargs delimiter.
+        self.previous_response_id = self.kwargs.pop('previous_response_id', None)
+        self.store = self.kwargs.pop('store', 'false').lower() == 'true'
+        self.json_schema_name = self.kwargs.pop('json_schema_name', 'qlik_response')
+        schema_b64 = self.kwargs.pop('json_schema_b64', None)
+        self.json_schema = None
+        if schema_b64:
+            padding = '=' * (-len(schema_b64) % 4)
+            decoded = base64.urlsafe_b64decode(schema_b64 + padding).decode('utf-8')
+            self.json_schema = json.loads(decoded)
+
         # Debug information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
             self._print_log(2)
-        
+
         # Remove the kwargs column from the request_df
         self.request_df = self.request_df.drop(['kwargs'], axis=1)
 
@@ -180,7 +267,7 @@ class LLMForQlik:
         Send the table description to Qlik as meta data.
         Used when the SSE is called from the Qlik load script.
         """
-        
+
         # Set up the table description to send as metadata to Qlik
         self.table = SSE.TableDescription()
         self.table.name = "SSE-Response-LLM"
@@ -191,43 +278,43 @@ class LLMForQlik:
             self.table.fields.add(name="key")
             self.table.fields.add(name="prompt")
             self.table.fields.add(name="response")
-                
+
         # Debug information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
             self._print_log(5)
-            
+
         # Send table description
         table_header = (('qlik-tabledescription-bin', self.table.SerializeToString()),)
         self.context.send_initial_metadata(table_header)
-    
+
     def _print_log(self, step):
         """
         Output useful information to stdout and the log file if debugging is required.
         :step: Print the corresponding step in the log
         """
-        
+
         # Set mode to append to log file
         mode = 'a'
 
         if self.logfile is None:
             self.__class__.log_no += 1
             self.logfile = os.path.join(os.getcwd(), 'logs', 'LLM Log {}.txt'.format(self.log_no))
-        
+
         if step == 1:
             output = "\nLLMForQlik Log: {0} \n\n".format(time.ctime(time.time()))
             mode = 'w'
-                                
+
         elif step == 2:
             output = "Execution parameters:\n"
             output += "  Deployment: {0}\n".format(self.deployment)
             output += "  Temperature: {0}\n".format(self.temperature)
             output += "  Max Tokens: {0}\n".format(self.max_tokens)
             output += "  System Prompt: {0}\n\n".format(self.system_prompt)
-        
+
         elif step == 3:
             output = "REQUEST: {0} rows x cols\nSample Data:\n\n".format(self.request_df.shape)
             output += "{0}\n...\n{1}\n\n".format(self.request_df.head().to_string(), self.request_df.tail().to_string())
-        
+
         elif step == 4:
             if isinstance(self.response_df, pd.DataFrame):
                 output = "RESPONSE: {0} rows x cols\nSample Data:\n\n".format(self.response_df.shape)
@@ -235,7 +322,7 @@ class LLMForQlik:
             else:
                 output = "RESPONSE: {0} rows\nSample Data:\n\n".format(len(self.response_df))
                 output += "{0}\n\n".format(self.response_df.head().to_string())
-        
+
         elif step == 5:
             output = "\nTABLE DESCRIPTION SENT TO QLIK:\n\n{0} \n\n".format(self.table)
 
@@ -247,9 +334,9 @@ class LLMForQlik:
         """
         Output exception message to stdout and also to the log file if debugging is required.
         """
-        
+
         sys.stdout.write("\n{0}: {1} \n\n".format(s, e))
-        
+
         if self.debug:
             with open(self.logfile, 'a') as f:
                 f.write("\n{0}: {1} \n\n".format(s, e))
@@ -260,7 +347,7 @@ class ClaudeForQlik:
     A class to provide Azure AI Foundry Claude LLM capabilities for Qlik.
     Supports Claude Haiku, Opus, and Sonnet models via Azure AI Foundry.
     """
-    
+
     # Counter used to name log files for instances of the class
     log_no = 0
 
@@ -271,7 +358,7 @@ class ClaudeForQlik:
         :param context:
         :Sets up the input data frame and parameters based on the request
         """
-        
+
         # Set the request and context variables for this object instance
         self.request = request
         self.context = context
@@ -292,7 +379,7 @@ class ClaudeForQlik:
         """
         Send a prompt to the Azure AI Foundry Claude LLM and return the response.
         Can be called from a chart expression or the load script in Qlik.
-        
+
         :Qlik expression examples:
         :<AAI Connection Name>.LLM_Claude_Chat('Analyze this sales trend: ' & SalesData, 'model=sonnet')
         :<AAI Connection Name>.LLM_Claude_Chat('Recommend reorder quantity for ' & ProductName, 'model=opus|system_prompt=You are an inventory expert.')
@@ -306,7 +393,7 @@ class ClaudeForQlik:
             # Chart expression variant
             row_template = ['strData', 'strData']
             col_headers = ['prompt', 'kwargs']
-        
+
         # Create a Pandas DataFrame for the request data
         self.request_df = utils.request_df(self.request, row_template, col_headers)
 
@@ -314,7 +401,7 @@ class ClaudeForQlik:
         if 'kwargs' in self.request_df.columns:
             kwargs = self.request_df.loc[0, 'kwargs']
             self._set_params(kwargs)
-        
+
         # Print the request dataframe to the logs
         if self.debug:
             self._print_log(3)
@@ -324,22 +411,22 @@ class ClaudeForQlik:
 
         for i in self.request_df.index:
             prompt = self.request_df.loc[i, 'prompt']
-            
+
             try:
                 response_text = self._call_claude(prompt)
             except Exception as e:
                 response_text = "Error: {}".format(str(e))
                 if self.debug:
                     self._print_exception("Claude call failed", e)
-            
+
             if load_script:
                 responses.append((self.request_df.loc[i, 'key'], prompt, response_text))
             else:
                 responses.append(response_text)
-        
+
         if load_script:
             self.response_df = pd.DataFrame(responses, columns=['key', 'prompt', 'response'])
-            
+
             # Send the response table description to Qlik
             self._send_table_description("chat_bulk")
         else:
@@ -358,7 +445,7 @@ class ClaudeForQlik:
 
         # Build the messages list
         messages = [{"role": "user", "content": prompt}]
-        
+
         # Build the API call kwargs
         api_kwargs = {
             "model": self.model,
@@ -383,19 +470,19 @@ class ClaudeForQlik:
         """
         Set input parameters based on the request.
         """
-        
+
         # If key word arguments were included in the request, get the parameters and values
         self.kwargs = {} if len(kwargs) == 0 else utils.get_kwargs(kwargs)
-            
+
         # Set the debug option for generating execution logs
         self.debug = False if 'debug' not in self.kwargs else ('true' == self.kwargs.pop('debug').lower())
-            
+
         # Additional information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
             self.__class__.log_no += 1
             self.logfile = os.path.join(os.getcwd(), 'logs', 'Claude Log {}.txt'.format(self.log_no))
             self._print_log(1)
-        
+
         # Set the Claude model: haiku, opus, or sonnet (default: sonnet)
         model_key = self.kwargs.pop('model', 'sonnet').lower()
         if model_key in CLAUDE_MODELS:
@@ -416,7 +503,7 @@ class ClaudeForQlik:
         # Debug information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
             self._print_log(2)
-        
+
         # Remove the kwargs column from the request_df
         self.request_df = self.request_df.drop(['kwargs'], axis=1)
 
@@ -425,7 +512,7 @@ class ClaudeForQlik:
         Send the table description to Qlik as meta data.
         Used when the SSE is called from the Qlik load script.
         """
-        
+
         # Set up the table description to send as metadata to Qlik
         self.table = SSE.TableDescription()
         self.table.name = "SSE-Response-Claude"
@@ -436,43 +523,43 @@ class ClaudeForQlik:
             self.table.fields.add(name="key")
             self.table.fields.add(name="prompt")
             self.table.fields.add(name="response")
-                
+
         # Debug information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
             self._print_log(5)
-            
+
         # Send table description
         table_header = (('qlik-tabledescription-bin', self.table.SerializeToString()),)
         self.context.send_initial_metadata(table_header)
-    
+
     def _print_log(self, step):
         """
         Output useful information to stdout and the log file if debugging is required.
         :step: Print the corresponding step in the log
         """
-        
+
         # Set mode to append to log file
         mode = 'a'
 
         if self.logfile is None:
             self.__class__.log_no += 1
             self.logfile = os.path.join(os.getcwd(), 'logs', 'Claude Log {}.txt'.format(self.log_no))
-        
+
         if step == 1:
             output = "\nClaudeForQlik Log: {0} \n\n".format(time.ctime(time.time()))
             mode = 'w'
-                                
+
         elif step == 2:
             output = "Execution parameters:\n"
             output += "  Model: {0}\n".format(self.model)
             output += "  Temperature: {0}\n".format(self.temperature)
             output += "  Max Tokens: {0}\n".format(self.max_tokens)
             output += "  System Prompt: {0}\n\n".format(self.system_prompt)
-        
+
         elif step == 3:
             output = "REQUEST: {0} rows x cols\nSample Data:\n\n".format(self.request_df.shape)
             output += "{0}\n...\n{1}\n\n".format(self.request_df.head().to_string(), self.request_df.tail().to_string())
-        
+
         elif step == 4:
             if isinstance(self.response_df, pd.DataFrame):
                 output = "RESPONSE: {0} rows x cols\nSample Data:\n\n".format(self.response_df.shape)
@@ -480,7 +567,7 @@ class ClaudeForQlik:
             else:
                 output = "RESPONSE: {0} rows\nSample Data:\n\n".format(len(self.response_df))
                 output += "{0}\n\n".format(self.response_df.head().to_string())
-        
+
         elif step == 5:
             output = "\nTABLE DESCRIPTION SENT TO QLIK:\n\n{0} \n\n".format(self.table)
 
@@ -492,9 +579,9 @@ class ClaudeForQlik:
         """
         Output exception message to stdout and also to the log file if debugging is required.
         """
-        
+
         sys.stdout.write("\n{0}: {1} \n\n".format(s, e))
-        
+
         if self.debug:
             with open(self.logfile, 'a') as f:
                 f.write("\n{0}: {1} \n\n".format(s, e))
