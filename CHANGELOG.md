@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Default the gRPC listener to IPv4 loopback and add validated `--host`/`QLIK_SSE_HOST` selection for plaintext and mutual-TLS modes. Existing remote clients must explicitly select their interface/wildcard and retain TLS configuration. Start wrappers forward these options; startup/diagnostics show the selected address.
+
 - Refresh the supported analytics, scraping, LLM, cloud and developer dependency graph, including Firecrawl 4.54, OpenAI 3.41, Anthropic 2.3, StatsForecast 2.1 and SciPy 1.18.
 - Freeze notebook, Plotly and curated transformer extras with complete hashed exports; update and pin CI actions and uv.
 - Repair Pillow's independent Brotli decoder to 1.2.1 on reviewed Windows AMD64, Linux AMD64 and macOS ARM64 wheels, retaining native provenance and codec/font checks.

@@ -9,4 +9,4 @@ if (Test-Path "$PSScriptRoot\.env") {
 }
 
 cd $PSScriptRoot\qlik-py-env\core
-python -u __main__.py
+python -u __main__.py @args

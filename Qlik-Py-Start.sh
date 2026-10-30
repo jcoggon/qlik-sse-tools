@@ -11,4 +11,4 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
 fi
 
 cd "$SCRIPT_DIR/qlik-py-env/core"
-python -u __main__.py
+python -u __main__.py "$@"
