@@ -100,9 +100,9 @@ The local macOS ARM64 repair passed all12 available upstream Brotli CTest cases,
 decoder1.2.1 readback, bounded decompression, PNG/JPEG/TIFF/WebP/AVIF/JPEG2000
 round trips, FreeType use and repaired installed-RECORD checks. Resulting local
 decoder SHA-256 was
-`786c272c623420f659c39b94e9c7df027c3b53633066efe1491bbc257832c772`;
+`7ba6990d11445e0125ad37bcd7efe884a4f052221bcae0f50b96f2dce2c91ff8`;
 common-library SHA-256 was
-`8a5577aeed2a3c0f6dd5ebecfe66b46edcde36753c078cc0054e75292aea629e`.
+`58336ba160d01ced5c5184c0946c36d524648ff6071749e1692ac05f6a3259ec`.
 Build output hashes are toolchain-specific receipts, not portable wheel hashes.
 
 Windows statically incorporates Brotli into its FreeType extension according to
@@ -119,6 +119,49 @@ StatsForecast2.0.3 dependency constraint requires scipy<1.16, so this task does 
 silently replace the analytics stack or count those checks as passing. Real
 trusted `.keras` and HDF5 round trips passed independently. Cross-platform CI and
 the complete frozen install must be read back on the final PR revision.
+
+## Verification record
+
+Code revision `992690c8042f3e417144b8ba2754b0120cef7313` is qualified in
+[PR CI run41061783656](https://github.com/jcoggon/qlik-sse-tools/actions/runs/41061783656).
+The Linux jobs reuse the immutable CPython3.13.18 image already accepted downstream,
+with fixed Debian snapshot/tool inputs. Native jobs mutate only disposable venvs.
+The older hosted macOS/Windows Python3.13 patch releases are functional
+compatibility checks, not independent acceptance of the maintained interpreter
+baseline or Windows native repair.
+
+- All four complete dependency exports passed strict audit with zero known
+  vulnerabilities: core115 packages, cloud121, deep-learning131, dev145.
+- Frozen universal/optional/bootstrap export reproducibility passed in CI and
+  locally. The dev audit originally found additional tooling issues; these were
+  corrected rather than ignored. Bootstrap/dev pip both read back26.2.2.
+- Linux CPython3.13.18 functional verification passed the standalone suite,
+  12 original protocol/registry/analytics/cloud pytest cases and24 new
+  HTTP/TLS/model-admission/native-custody cases, plus existing/new lint,
+  compilation, pip check and package generation. Windows functional verification
+  also passed these checks. The standalone harness counts an unavailable spaCy
+  English model as a pass; retain that optional-model skip in acceptance.
+- All5 real Linux TensorFlow/scikeras/Keras cases passed: trusted `.keras` and
+  HDF5 round trips, persistent scikeras restoration, controlled virtual-HDF5
+  rejection, and shape-metadata rejection without allocating the declared array.
+- Linux AMD64 and macOS ARM64 native CI qualification passed:12 upstream Brotli
+  CTest cases, actual1.2.1 decoder readback, bounded decompression, six codecs,
+  FreeType and patched installed RECORD. The macOS source build preserves the
+  wheel's macOS11 deployment target. Each installation has its own native-byte
+  receipt; do not substitute the historical Gateway decoder hash for another build.
+- Local external-drive checks passed28 security/supply-chain/registry/version
+  cases, lint, compilation, shell and PowerShell parsing, pip check, package
+  generation and the independent macOS native rebuild. The local macOS27
+  SciPy-loader failure and bounded/stopped TensorFlow import remain local
+  platform findings; successful Linux CI is the separate model/analytics evidence.
+
+The PR remains draft for the explicit unimplemented/unqualified Windows native
+path and other unsupported native architectures. No customer/runtime upgrade,
+Gateway import, publication, or installed acceptance follows from these results.
+
+The [machine-readable dependency/native/input-hash record](2026-10-30-security-locks.json)
+records the exact upstream locks and requirements for downstream review. Its
+qualified code revision is separate from subsequent evidence-only commits.
 
 ## Downstream integration ownership matrix
 
