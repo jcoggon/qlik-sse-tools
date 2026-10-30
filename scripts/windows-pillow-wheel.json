@@ -1,0 +1,483 @@
+{
+  "files": {
+    "PIL/AvifImagePlugin.py": {
+      "sha256": "d64fe66e4ff27d628780faadd129f664d0e713d65a6bdcf4f946bd422d87d6ad",
+      "size": 9718
+    },
+    "PIL/BdfFontFile.py": {
+      "sha256": "68909057709d4a55dfbffed11595a4a3dfd074c24361b388a686d40c1867ba82",
+      "size": 3382
+    },
+    "PIL/BlpImagePlugin.py": {
+      "sha256": "ba361f6039637e1136020155f042002882835ad3402084c9e027d6c063de1af8",
+      "size": 17032
+    },
+    "PIL/BmpImagePlugin.py": {
+      "sha256": "cd3d30275991e278244b490db80c751342c5e555131204fb428b3875e54bc118",
+      "size": 20917
+    },
+    "PIL/BufrStubImagePlugin.py": {
+      "sha256": "c8f042b828044ba702b1840d0093ed746b4f4db8d481e2576cba22a30fa18f1f",
+      "size": 1745
+    },
+    "PIL/ContainerIO.py": {
+      "sha256": "bb8bb2fd765e650e4363c66a90c69ba10e92a4f44318ec075dad7bd222db8479",
+      "size": 4824
+    },
+    "PIL/CurImagePlugin.py": {
+      "sha256": "992c71d697e796375883d1a0261b3438f88844f54bea5e5c8d6167bbf8726590",
+      "size": 2852
+    },
+    "PIL/DcxImagePlugin.py": {
+      "sha256": "0938ea04cb87adaced56786ee2239e5a4c875376838140a0c146d0790a777636",
+      "size": 2406
+    },
+    "PIL/DdsImagePlugin.py": {
+      "sha256": "a03adf884e427d56e0f05638c11fa29cc84fe8ba72e6e3eee3de1b47d6e716ae",
+      "size": 19819
+    },
+    "PIL/EpsImagePlugin.py": {
+      "sha256": "678faa7c7b712bfdf9c7b6536906ced6c66ab8c7a30374d85ca33030cd9730cc",
+      "size": 17627
+    },
+    "PIL/ExifTags.py": {
+      "sha256": "8a2248027fbdd9877ee789de6bf8b15e6df5eecc13b30f0f0637a46894ca0794",
+      "size": 10301
+    },
+    "PIL/FitsImagePlugin.py": {
+      "sha256": "3b116af52aad541376f2125ef93785832dc7bb36fb67e815a85cc917d6abf317",
+      "size": 5536
+    },
+    "PIL/FliImagePlugin.py": {
+      "sha256": "62ee542fd7c0c79c567b933299c316676bdbd059697a84c004f88debc65f6c17",
+      "size": 5358
+    },
+    "PIL/FontFile.py": {
+      "sha256": "58bf3a4021a8667f50c6cbc7974f7a14794b5bb4c26ba9a91a6e1855a00a8b63",
+      "size": 4486
+    },
+    "PIL/FpxImagePlugin.py": {
+      "sha256": "a85c06b977caa670404b998193d75c7bfbcecec266e9a634095fdc1350289a09",
+      "size": 7762
+    },
+    "PIL/FtexImagePlugin.py": {
+      "sha256": "0e8d7591b3a8b44352652b0f1e0d0aa49a6b21618a87345ef29450055e26ef7e",
+      "size": 3832
+    },
+    "PIL/GbrImagePlugin.py": {
+      "sha256": "8de0ccf95823b05c8e8b04ecb84539938de70f61a85c30f58323af5710367981",
+      "size": 3166
+    },
+    "PIL/GdImageFile.py": {
+      "sha256": "dd9031c22d100698bd9e9a0be41d86f0720eb512241c83c70ee6be3c77315c2c",
+      "size": 3041
+    },
+    "PIL/GifImagePlugin.py": {
+      "sha256": "041d5e36d20d6312f93e0a1c37ede1b23b253a0d68b0931df8b68a708596068c",
+      "size": 40756
+    },
+    "PIL/GimpGradientFile.py": {
+      "sha256": "1e40e531e47d151f2f894dbd73f5b77a70803a6833e6bcc614e82cc6ef0dfe2f",
+      "size": 4183
+    },
+    "PIL/GimpPaletteFile.py": {
+      "sha256": "11ed314ce1879a6d15375338a7c175cd3b44292d6e5819987c4b1ca6392b01dd",
+      "size": 1965
+    },
+    "PIL/GribStubImagePlugin.py": {
+      "sha256": "ab11a4fb573e6407003cd220b03728c181ff8e94ee35adaa3b0194b170953a4d",
+      "size": 1774
+    },
+    "PIL/Hdf5StubImagePlugin.py": {
+      "sha256": "25535b5b9b989001957216e4483096ca67ac0b646e65457f586d79d001db49b9",
+      "size": 1756
+    },
+    "PIL/IcnsImagePlugin.py": {
+      "sha256": "e6ca44bcfd36458185869db3941a79e96f64f79a16f2bbdd4612a92ed3bbe0bb",
+      "size": 12885
+    },
+    "PIL/IcoImagePlugin.py": {
+      "sha256": "8e929e093d1f1c9925bdf0cf7bed986a94565ccf8bc14577315d4fb6284c973b",
+      "size": 14235
+    },
+    "PIL/ImImagePlugin.py": {
+      "sha256": "87ae476922b90329669da7a8f754e3d57480d69e0beb24641fa56a18a40395a2",
+      "size": 12233
+    },
+    "PIL/Image.py": {
+      "sha256": "6646cf8a0aa91c440293112934d0e0802cd90c207a07137281a1926c3465e23f",
+      "size": 158236
+    },
+    "PIL/ImageChops.py": {
+      "sha256": "aa3f9d10bf3fa3323cbb36658e5553123da84dc7352821af075ba058c6f4ce72",
+      "size": 7355
+    },
+    "PIL/ImageCms.py": {
+      "sha256": "7da688dee7037961d3c346ef55a8dfec3a6d787b2c9093e9e6d34a2553a1f702",
+      "size": 41232
+    },
+    "PIL/ImageColor.py": {
+      "sha256": "96100944dee28c2b8b69ef70a26fe056e58550bb4f664d0d466e2382ed2b3a19",
+      "size": 9809
+    },
+    "PIL/ImageDraw.py": {
+      "sha256": "01294915e47335edd158415c45c492d54bcef767b4dd51a21d576d9404461000",
+      "size": 36410
+    },
+    "PIL/ImageDraw2.py": {
+      "sha256": "9ecda8290d6bd903d610a1cfab92d73b549665e8bb19e93cf226fdff76a79f56",
+      "size": 7584
+    },
+    "PIL/ImageEnhance.py": {
+      "sha256": "9c6ec5314220bc03833fb234df6143d728431daf9b79e77ea0336850000d3e7b",
+      "size": 3694
+    },
+    "PIL/ImageFile.py": {
+      "sha256": "3de270f19469348052ec2f4937fd6f4cdd487ee998c15590a13fbb2b2032399c",
+      "size": 31184
+    },
+    "PIL/ImageFilter.py": {
+      "sha256": "36c87a7656c2324b6b675eb82b0718e85d0a983abf35d713b8c1913d2489e0af",
+      "size": 19533
+    },
+    "PIL/ImageFont.py": {
+      "sha256": "0b8494851d5cd92126e88903fafdd505f163f4f454d72a1dacba0d141a4b123a",
+      "size": 65235
+    },
+    "PIL/ImageGrab.py": {
+      "sha256": "086bfd888d5a4d3a64d4d9a21cea42ee1e408cb115cfbef0d79c03ddd2fbd70b",
+      "size": 8325
+    },
+    "PIL/ImageMath.py": {
+      "sha256": "934bf61017576ce1f7f5ff914314a9951a831c3590b683a0f8e17354ea79ff4e",
+      "size": 10652
+    },
+    "PIL/ImageMode.py": {
+      "sha256": "d6298e37f99ea7fdb5ed1996741d2bbc55c1c9b8c5e2e06da6aabaac90bd7049",
+      "size": 2480
+    },
+    "PIL/ImageMorph.py": {
+      "sha256": "93b5d16d19caecb69e8124ba690c40e829e6ffcf8acee9bc09464469b00bbe7e",
+      "size": 10702
+    },
+    "PIL/ImageOps.py": {
+      "sha256": "cafa9bfb486530860c624c9399889a581b2e34b78927eb479a2fe359dd8e5819",
+      "size": 28585
+    },
+    "PIL/ImagePalette.py": {
+      "sha256": "45c408096fb30600b27d3b9b1de85f9d1d645907102188a79e930d88d5bb8814",
+      "size": 10410
+    },
+    "PIL/ImagePath.py": {
+      "sha256": "6679c9baf40db5b2918429abeb54c4984875bd5579ffdd163043cbf0ea72e65f",
+      "size": 391
+    },
+    "PIL/ImageQt.py": {
+      "sha256": "6f270bf0f2411e2c5f4312b7e08009d93a50d4767e6e80f07f062f493bb34369",
+      "size": 7284
+    },
+    "PIL/ImageSequence.py": {
+      "sha256": "fbe8d8911099d785df6f2c3ba7909ce60c814b0ca80e7ab26dae766ee9108f95",
+      "size": 2406
+    },
+    "PIL/ImageShow.py": {
+      "sha256": "f2029eb1dbd9eba059ce3443b8b12b7568332aeab9e33b3ecc74c4fb703ea99e",
+      "size": 10778
+    },
+    "PIL/ImageStat.py": {
+      "sha256": "cbafd84437cb1ce3717ff7c000bc83ef3f91dae63adbcd850ed1e2d2d288a4c4",
+      "size": 5676
+    },
+    "PIL/ImageText.py": {
+      "sha256": "cbbdbc984427708ed8afe21c53141502b57dd6838eca813816d7f8faa594aa3b",
+      "size": 19169
+    },
+    "PIL/ImageTk.py": {
+      "sha256": "576f31c02699504d32328522ecc1f39ae00fdff5694e59492d57c27c940e95c9",
+      "size": 8441
+    },
+    "PIL/ImageTransform.py": {
+      "sha256": "8d69d1d3ea19c71365ca94bcaba4641391d35203c263abac3dfcbcf189c422fa",
+      "size": 4102
+    },
+    "PIL/ImageWin.py": {
+      "sha256": "27fddec11b775f810e8c390093a916031f4a0a0766d037ecbb0d86b1baa8e530",
+      "size": 8345
+    },
+    "PIL/ImtImagePlugin.py": {
+      "sha256": "43d604d4388ecd41dd06336d9575fee504bf1d5e0d12954f50c861da96159d2f",
+      "size": 2768
+    },
+    "PIL/IptcImagePlugin.py": {
+      "sha256": "5a07318590623d9e2c26c1193960e56a2f5518e2f0f2767aa706c805d3505c43",
+      "size": 6719
+    },
+    "PIL/Jpeg2KImagePlugin.py": {
+      "sha256": "2e1f0aab8c845a8110ae0a71fa70ab59bc4dece7fa63bf29765f105a5220091d",
+      "size": 15306
+    },
+    "PIL/JpegImagePlugin.py": {
+      "sha256": "520455ec7590a7372ad0fe52d082f590adf598ef2ac3ffb3457d9c4a081769ad",
+      "size": 32951
+    },
+    "PIL/JpegPresets.py": {
+      "sha256": "38bacfb90e0ca8ca81ecedcd00ced6feb2d200417cd0f45c468dc96e10b58a73",
+      "size": 12611
+    },
+    "PIL/McIdasImagePlugin.py": {
+      "sha256": "77159cb1e3322e6aaa8ab6c9c8b2965f694a551c6bead3ef5362ff73d698a14c",
+      "size": 1988
+    },
+    "PIL/MicImagePlugin.py": {
+      "sha256": "85490810328a3769d2185b43f6161cba8631b08002f1add5d6946f6cbcd9178c",
+      "size": 2793
+    },
+    "PIL/MpegImagePlugin.py": {
+      "sha256": "f7525282c71c17714b05673bd4353a3f2330299064ae1f173b4bd3772d51b4a9",
+      "size": 2180
+    },
+    "PIL/MpoImagePlugin.py": {
+      "sha256": "a77a2d046108a1adc47a4399d26cdb08f6808957f8ae5cbee56c046b2f0079bb",
+      "size": 7208
+    },
+    "PIL/MspImagePlugin.py": {
+      "sha256": "a5c3b0cfad52469b0ff1756398871d329d9e147e4474ccd50a102a63dd9cb2b8",
+      "size": 6348
+    },
+    "PIL/PSDraw.py": {
+      "sha256": "8303a61dfc2b1ce4a312385f267b877826400444ba31e7930db9c784404746f5",
+      "size": 7745
+    },
+    "PIL/PaletteFile.py": {
+      "sha256": "6428748a8e9dedfa1a275f9c46baf20e19317aaa372b1dfba8db4e4f2ff4c66c",
+      "size": 1354
+    },
+    "PIL/PalmImagePlugin.py": {
+      "sha256": "c1cf7ce4a8cc6318334f9dd0e4b8346e72f405f56787a727a60786394b208fe8",
+      "size": 9042
+    },
+    "PIL/PcdImagePlugin.py": {
+      "sha256": "819b027170c8a845532b6cfe1962a9b53db9a455350143a0a6bdc9d3a7233c28",
+      "size": 1842
+    },
+    "PIL/PcfFontFile.py": {
+      "sha256": "566c39c442879ed989e35c4b04b04b170868ccf8ece9b73a3e175c32b34a5c9f",
+      "size": 7267
+    },
+    "PIL/PcxImagePlugin.py": {
+      "sha256": "de3b85748748698e4e728738e1de606268a45c9f7d39442f5b395a94ddff5136",
+      "size": 6681
+    },
+    "PIL/PdfImagePlugin.py": {
+      "sha256": "62c0eb2e3f64fcb2caf0fccedc58fb44b0054c00b8923ef9a64b3bfc4e5d37a1",
+      "size": 9486
+    },
+    "PIL/PdfParser.py": {
+      "sha256": "ea722a6d82bee2783fb8c8e73b83189ce4af553dbe0ac8e04138d85b77845a12",
+      "size": 41113
+    },
+    "PIL/PixarImagePlugin.py": {
+      "sha256": "a78958489e99b851e177ae03b450e093509f549c25608105e463bdcf4c33df4b",
+      "size": 1868
+    },
+    "PIL/PngImagePlugin.py": {
+      "sha256": "a2e0daf92e893125153d8a012d30b9a6259e82fe36841ecda6ff1d2a809539de",
+      "size": 55767
+    },
+    "PIL/PpmImagePlugin.py": {
+      "sha256": "0e5d73b94cd0abf6e1d88f241a86453b358bace042dfa68ce35214925c2a7c87",
+      "size": 12813
+    },
+    "PIL/PsdImagePlugin.py": {
+      "sha256": "308f00e2cfb351e59d96a64e34e4be5a0aaa641365c7b52d83dfede1239c162b",
+      "size": 9324
+    },
+    "PIL/QoiImagePlugin.py": {
+      "sha256": "60fca52a0771bfbd3d5c3bf46e7e3c0db787f80006154e180f68ceb019711399",
+      "size": 9268
+    },
+    "PIL/SgiImagePlugin.py": {
+      "sha256": "1acf6d419b289ac80db952c8bf01bc3c13b7bfa93e6db968aa1cb0c5e6fefe81",
+      "size": 6698
+    },
+    "PIL/SpiderImagePlugin.py": {
+      "sha256": "7f8500ac64f2fbcf9cd884202262dfca77325cf3a354ed88bcdd7ffd9a033d6a",
+      "size": 10623
+    },
+    "PIL/SunImagePlugin.py": {
+      "sha256": "cddde6e2afdf7fc37808eac728b4206924e8776dc135fca6f7ee3a841f7fb1ed",
+      "size": 4772
+    },
+    "PIL/TarIO.py": {
+      "sha256": "6a28227e29b71a09b083299061f98bb9b031b830f26e4aef027ac000dbcf259d",
+      "size": 1708
+    },
+    "PIL/TgaImagePlugin.py": {
+      "sha256": "57fc21d319c1f23a5e36e2be04d049849b8cf9890b3f956dcd59acdf91a58235",
+      "size": 8383
+    },
+    "PIL/TiffImagePlugin.py": {
+      "sha256": "760a92047f0ad1037e0c85b242b4486bdc1c46304615d748686177c3541826f7",
+      "size": 90539
+    },
+    "PIL/TiffTags.py": {
+      "sha256": "b0fff0431110dae372f9960305f689997dc60e50c8bae5dfb1fc236f0585a202",
+      "size": 17894
+    },
+    "PIL/WalImageFile.py": {
+      "sha256": "647699a10bc2cb53f1c39ec2bce2a2706591afe08081b6000417be880ddbaab1",
+      "size": 5981
+    },
+    "PIL/WebPImagePlugin.py": {
+      "sha256": "7dcc4c8cbb725266615082da2f060be254db4ff81527b01c05e29746b3ea4d72",
+      "size": 11457
+    },
+    "PIL/WmfImagePlugin.py": {
+      "sha256": "39f197555b7be30242332561afff5f9aecd9b8d67dd61247ba4d9bb07d2c692a",
+      "size": 5711
+    },
+    "PIL/XVThumbImagePlugin.py": {
+      "sha256": "aee34d7d9b0b869d2222b841026937876e78fd710aa4e39022aba9d2abd473b8",
+      "size": 2209
+    },
+    "PIL/XbmImagePlugin.py": {
+      "sha256": "7c136acba923d8a8a193e3b7d8626e0bc1d23d576a651edc6ebe8e39105038d6",
+      "size": 3849
+    },
+    "PIL/XpmImagePlugin.py": {
+      "sha256": "1ae86981783d2a8c6234fe1aca13346129846b127c7099e59e5ed2b4caeebf40",
+      "size": 5300
+    },
+    "PIL/__init__.py": {
+      "sha256": "3fffff8502f4b59ca61d39cce713d55ffef046954262fce1abac3e97f3803734",
+      "size": 2122
+    },
+    "PIL/__main__.py": {
+      "sha256": "5fc788a469661df9e9ef36b3a7999d6afdb6f08b5c7f696488c3f4b4b53a5fd7",
+      "size": 140
+    },
+    "PIL/_avif.cp313-win_amd64.pyd": {
+      "sha256": "6c6e5d33db5ecd8a28252103c97ac7867d376371875b6baa609947d8e778022a",
+      "size": 7890944
+    },
+    "PIL/_avif.pyi": {
+      "sha256": "cc3f2f0283c2f1a1085637dc90bb45b24456e6c6a255e977fac254036a476867",
+      "size": 66
+    },
+    "PIL/_binary.py": {
+      "sha256": "b95d3f4e5dde3d80029f4b27aa5b93139803ab2487989971054db7543d710e56",
+      "size": 2728
+    },
+    "PIL/_deprecate.py": {
+      "sha256": "dcede15593dee08f34af4e5cc29f286959faca1280e6dbbfea6901698924a680",
+      "size": 2141
+    },
+    "PIL/_imaging.cp313-win_amd64.pyd": {
+      "sha256": "832167d2ecd950dc2382a9866e346d5886262bc8790bbf24613f56ad19d52f82",
+      "size": 2662400
+    },
+    "PIL/_imaging.pyi": {
+      "sha256": "8d2446dead5dc2204ca8ec0884bb5305edcb30ac2c8b76244dc0dfb0a577d84d",
+      "size": 924
+    },
+    "PIL/_imagingcms.cp313-win_amd64.pyd": {
+      "sha256": "4ab7b14029ea0a6bdb7f94b069ad3399d53fd192aaeed7460fbabba61d065b76",
+      "size": 275456
+    },
+    "PIL/_imagingcms.pyi": {
+      "sha256": "e7f48329eecac13f5a6f911e1bec27e85e6cbff7ecd28db5db1a0f066dc7f88a",
+      "size": 4576
+    },
+    "PIL/_imagingft.cp313-win_amd64.pyd": {
+      "sha256": "91f0a8e145163803637620517bad32ad5cb551d8a4dc02c3309811af24dbcbcc",
+      "size": 2250752
+    },
+    "PIL/_imagingft.pyi": {
+      "sha256": "535ae9c2a417d6150bbd3028f1f634fc8ad79e0f953ee09755a581523da9d73d",
+      "size": 1903
+    },
+    "PIL/_imagingmath.cp313-win_amd64.pyd": {
+      "sha256": "d1aafa904aa69eed5008d1ced3b20c049670cd521593d1f0a4ff2ef44f9371cb",
+      "size": 21504
+    },
+    "PIL/_imagingmath.pyi": {
+      "sha256": "cc3f2f0283c2f1a1085637dc90bb45b24456e6c6a255e977fac254036a476867",
+      "size": 66
+    },
+    "PIL/_imagingmorph.cp313-win_amd64.pyd": {
+      "sha256": "e50c8f830f06ced4cca8fd9f5cb10f0918a2d12c6263dd7bc1de1a3666b2102b",
+      "size": 12288
+    },
+    "PIL/_imagingmorph.pyi": {
+      "sha256": "cc3f2f0283c2f1a1085637dc90bb45b24456e6c6a255e977fac254036a476867",
+      "size": 66
+    },
+    "PIL/_imagingtk.cp313-win_amd64.pyd": {
+      "sha256": "a7af2e099caae412470919646d5d1cf36566fbed697c4cd44e926029dd2c4ccf",
+      "size": 14336
+    },
+    "PIL/_imagingtk.pyi": {
+      "sha256": "cc3f2f0283c2f1a1085637dc90bb45b24456e6c6a255e977fac254036a476867",
+      "size": 66
+    },
+    "PIL/_tkinter_finder.py": {
+      "sha256": "1f5530ddd57b8161c88ffa2c527245c56875691b10d8c74aa4d3f7bd0c10716d",
+      "size": 558
+    },
+    "PIL/_typing.py": {
+      "sha256": "b2658d157a9fced3fe7deb919155779a9dfe96b6242951db1d7f39a399f555ea",
+      "size": 1001
+    },
+    "PIL/_util.py": {
+      "sha256": "78ff087e658999b13f3ea6d425be2a4ea18d2e2e334f44d369daebaa6ca483b6",
+      "size": 713
+    },
+    "PIL/_version.py": {
+      "sha256": "ef8061e8a3ed8b658ee877f5693d4d2f6fae25b4a44a4e83c654cd528b55e68c",
+      "size": 91
+    },
+    "PIL/_webp.cp313-win_amd64.pyd": {
+      "sha256": "77ec2f34c0a33151c7b020dfc987163678e1e3428508117ca8cbc68dfb2af2b1",
+      "size": 415744
+    },
+    "PIL/_webp.pyi": {
+      "sha256": "cc3f2f0283c2f1a1085637dc90bb45b24456e6c6a255e977fac254036a476867",
+      "size": 66
+    },
+    "PIL/features.py": {
+      "sha256": "377f0ed5a0d19df432fc38dc04160c8565863c48dfef72f676b269d44563d454",
+      "size": 11214
+    },
+    "PIL/py.typed": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "PIL/report.py": {
+      "sha256": "ea6ecd3afd5adb8e7bed9889a315fcf62a7925e3a07f63b517de5febed4ae5a3",
+      "size": 105
+    },
+    "pillow-13.0.0.dist-info/METADATA": {
+      "sha256": "140f39cb31ec9b46109828a6286f034a4848621263d6aab38d2f142083dd06c5",
+      "size": 9300
+    },
+    "pillow-13.0.0.dist-info/WHEEL": {
+      "sha256": "d0b50da07c4bbdca70f5d6ffc745e8cc4e635bbdfefc63803bb7c30c9e17b784",
+      "size": 101
+    },
+    "pillow-13.0.0.dist-info/licenses/LICENSE": {
+      "sha256": "988ffe8ab3480b0f4e9a0ab2702bffd73d9fb6b47198043fb3ba101a62fac236",
+      "size": 78481
+    },
+    "pillow-13.0.0.dist-info/sboms/pillow-13.0.0.cdx.json": {
+      "sha256": "fe1ca6e3a4f73e7018a3805a75a19377453f342d203712f37387ad6ee853fd44",
+      "size": 21892
+    },
+    "pillow-13.0.0.dist-info/top_level.txt": {
+      "sha256": "ae266aae4fa1c99aa1e5fd59d19c228b774a7f112c07286ef5c53d20e0c5f8d6",
+      "size": 4
+    }
+  },
+  "schema": "qlik.sse.windows-pillow-wheel/v1",
+  "wheel": "pillow-13.0.0-cp313-cp313-win_amd64.whl",
+  "wheel_sha256": "9dda0788a9932776a75d8bcc020076edc308ce2508b51f6739a45e3158b3fc42"
+}

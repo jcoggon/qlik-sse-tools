@@ -241,3 +241,5 @@ This project builds on the original [`qlik-py-tools`](https://github.com/nabeel-
 ## License
 
 This repository remains MIT licensed. The upstream MIT license has been restored in [`LICENSE`](LICENSE).
+
+Optional operator-local Windows native delivery is documented in [docs/WindowsNativeBundle.md](docs/WindowsNativeBundle.md). Its explicit approval, exact runtime/source/wheel admission and fresh native checks are separate from the default compiler-based route.

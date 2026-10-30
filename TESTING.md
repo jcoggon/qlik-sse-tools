@@ -712,3 +712,5 @@ and `python scripts/pillow_native.py`. Windows requires MSVC C++ Build Tools wit
 Windows SDK. A passing Python package audit alone cannot qualify bundled native
 libraries. See [Security.md](docs/Security.md) for supported architectures and
 [the handoff](docs/2026-10-30-security-handoff.md) for exact final CI evidence.
+
+Windows native CI now stages the exact pinned CPython 3.13.18 supplier, produces a small immutable test artifact only after native tests, then qualifies explicit delivery into a fresh original wheel environment without compiler discovery. `tests/test_pillow_bundle.py` covers static admission, wheel/RECORD custody, rollback and incomplete approval proof; `tests/qualify_windows_bundle.py` is a CI-only fixture, not operator approval. See [Windows native delivery](docs/WindowsNativeBundle.md).

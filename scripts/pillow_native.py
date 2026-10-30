@@ -99,6 +99,9 @@ def probe():
             raise RuntimeError("Windows native build recipe provenance differs")
         if receipt.get("input_manifest_sha256") != digest(manifest):
             raise RuntimeError("Windows native input provenance differs")
+    if windows and "bundle_delivery" in receipt:
+        import pillow_bundle
+        pillow_bundle.verify_delivery(package, receipt)
     decoder = next(root / name for name in selected["files"] if windows or "brotlidec" in name)
     lib = ctypes.CDLL(str(decoder))
     version = getattr(lib, "QlikBrotliDecoderVersion" if windows else "BrotliDecoderVersion")
