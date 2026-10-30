@@ -26,8 +26,10 @@ jobs:
       - name: Install macOS native runtime
         if: runner.os == 'macOS'
         run: brew install libomp
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/dev.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/dev.lock
       - run: python -m pip check
       - run: python tests/test_all_tools.py
       - run: python -m pytest tests/test_registry.py tests/test_version.py tests/test_server_integration.py tests/test_llm_responses.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py
@@ -58,8 +60,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/core.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/core.lock
       - run: python scripts/pillow_native.py --repair
       - run: python scripts/pillow_native.py
       - run: python -m pip check
@@ -71,8 +75,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/dev.lock -r locks/deep-learning.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/dev.lock -r locks/deep-learning.lock
       - run: python -m pip check
       - run: python -m pytest tests/test_keras_security.py
 
@@ -83,8 +89,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
-      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/dev.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
+      - run: >-
+          python -m pip install --require-hashes --only-binary=:all: -r locks/dev.lock
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/core.lock
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/cloud.lock
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/deep-learning.lock
