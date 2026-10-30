@@ -104,7 +104,7 @@
     "requirements-visualization.txt": "3dc2bd34f386a39559b7c3d00e30402bce091376a142ad31384817564233114f",
     "requirements.txt": "097f768e50ad93e07b1b642e71e25c4846d6a4aebd014f4f0d20a6db78038f1a",
     "scripts/pillow_native.py": "ef4a9ea5b94978868e7de7719a599288a3d74c75993592a68950b22890dacaaf",
-    "scripts/pillow_windows.py": "19ef128551cb48580281b0764dc2a8e835686a0b90c47c16c1323efb2f5cb636",
+    "scripts/pillow_windows.py": "26019641dfdface4947ab55f5591691723eae433fed67a4a6c9edafcf9689ba5",
     "scripts/windows-native-inputs.json": "b37dcf5a352634ae8fd69959a4f3285677c3919ad6b29cb8b5a8d23b07f1c522",
     "uv.lock": "1c3b516b32425626dc226f642d3bca8dbd5ec419e3c3b58a988533302396dd08"
   },
@@ -115,7 +115,6 @@
     "spacy-curated-transformers": "0.3.1: spaCy 3.8 requires Thinc 8.3; curated transformers 2.x requires Thinc 9",
     "python": "CPython >=3.13.18,<3.14; separate 3.14 wheel probe"
   },
-  "runtime_code_commit": "f2bd84065b131d77d5c62cf382c303231930af71",
   "qualification_authority": "https://github.com/jcoggon/qlik-sse-tools/pull/16/checks",
-  "qualification_note": "This record identifies inputs and reviewed repair policies. Acceptance requires successful CI for the final PR head; per-installation native receipts identify rebuilt bytes."
+  "qualification_note": "This record identifies dependency/native inputs and reviewed repair policies. Acceptance requires successful CI for the final PR head; per-installation native receipts identify rebuilt bytes."
 }

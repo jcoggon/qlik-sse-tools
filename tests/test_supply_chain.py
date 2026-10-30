@@ -121,6 +121,7 @@ def test_windows_native_repair_preserves_original_on_failure(tmp_path, monkeypat
         fonts = work / "pillow" / "pillow-13.0.0" / "Tests" / "fonts"
         fonts.mkdir(parents=True)
         (fonts / "OpenSans.woff2").write_bytes(b"fixture")
+        (fonts / "LICENSE.txt").write_text("font license")
         return extension, prefix
 
     monkeypatch.setattr(native, "feature_snapshot", lambda: {"raqm": False, "harfbuzz": False, "fribidi": False})

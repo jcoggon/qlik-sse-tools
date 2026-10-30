@@ -166,9 +166,7 @@ The previous security-only revision60d5e1c passed all required jobs in
 [PR CI41062407452](https://github.com/jcoggon/qlik-sse-tools/actions/runs/41062407452).
 That run does not qualify the subsequent broad refresh or Windows rebuild.
 
-Current runtime/build/test source is commit
-`f2bd84065b131d77d5c62cf382c303231930af71`; subsequent documentation-only
-commits do not change those inputs. Final acceptance belongs to the exact head
+Final acceptance belongs to the exact source head
 shown in [PR #16 Checks](https://github.com/jcoggon/qlik-sse-tools/pull/16/checks).
 The PR description records the successful final run and head after completion.
 All ten required jobs must pass: three functional platforms, three native
@@ -195,7 +193,7 @@ CPython>=3.13.18. No passing source run implies a customer/runtime upgrade,
 Gateway import, publication or installed acceptance.
 
 The [machine-readable dependency/native/input-hash record](2026-10-30-security-locks.json)
-records the exact graph, native sources and runtime source identity, with a link
+records the exact graph, native sources and input identities, with a link
 to the authoritative CI checks. Native output hashes belong to individual build
 receipts rather than a portable source lock.
 

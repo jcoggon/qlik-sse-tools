@@ -201,6 +201,7 @@ def repair(package):
             fixture = root / "raptor-native-smoke.woff2"
             pillow_root = prefix.parent / "pillow" / "pillow-13.0.0"
             shutil.copyfile(pillow_root / "Tests" / "fonts" / "OpenSans.woff2", fixture)
+            shutil.copyfile(pillow_root / "Tests" / "fonts" / "LICENSE.txt", licenses / "pillow-test-fonts.txt")
             receipt = {
                 "schema": "raptor.sse.native-security/v1", "component": "brotli", "version": "1.2.1",
                 "source_commit": "db24a98aed38a16de78cc05ca15cdd8dc2a0d92d",
