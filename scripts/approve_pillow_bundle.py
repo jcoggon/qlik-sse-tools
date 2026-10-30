@@ -51,7 +51,7 @@ def qualify_evidence(run, artifact, jobs, producer_commit, consumer_commit, prod
     windows = next(j for j in jobs if j["name"] == "native-security (windows-latest)")
     bundle.require(any(s["name"] == "Qualify explicit Windows native bundle" and s.get("conclusion") == "success"
                        for s in windows.get("steps", [])), "Actual compiler-free consumer CI proof missing")
-    bundle.require(not artifact.get("expired") and artifact.get("workflow_run", {}).get("id") == run["id"]
+    bundle.require(artifact.get("expired") is False and artifact.get("workflow_run", {}).get("id") == run["id"]
                    and artifact["workflow_run"].get("head_sha") == run["head_sha"]
                    and artifact["workflow_run"].get("head_repository_id") == bundle.REPOSITORY_ID
                    and artifact.get("digest", "").startswith("sha256:")
@@ -67,6 +67,7 @@ def approve(transport, run_id, artifact_id, source_commit, output):
                    "Issue approval from the clean reviewed consumer-source checkout")
     run = github(f"actions/runs/{run_id}")
     artifact = github(f"actions/artifacts/{artifact_id}")
+    bundle.require(run.get("id") == run_id and artifact.get("id") == artifact_id, "GitHub run/artifact lookup identity differs")
     jobs = github(f"actions/runs/{run_id}/jobs?filter=latest&per_page=100")["jobs"]
     producer_commit = github("git/commits/" + run["head_sha"])
     consumer_commit = github("git/commits/" + source_commit)

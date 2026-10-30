@@ -101,6 +101,8 @@ def custody(path, directory=False):
 
 def read_file(path, limit, expected=None):
     path = Path(path)
+    for parent in path.parents:
+        custody(parent, directory=True)
     before = custody(path)
     require(before.st_size <= limit, "Native file exceeds its dedicated budget")
     identity = file_id(path)
@@ -493,6 +495,7 @@ def export_bundle(output):
     producer = {"repository": os.environ.get("GITHUB_REPOSITORY"), "repository_id": int(os.environ.get("GITHUB_REPOSITORY_ID", "0")),
                 "workflow": WORKFLOW, "source_commit": git("rev-parse", "HEAD"), "source_tree": git("rev-parse", "HEAD^{tree}"),
                 "run_id": int(os.environ.get("GITHUB_RUN_ID", "0")), "run_attempt": int(os.environ.get("GITHUB_RUN_ATTEMPT", "0"))}
+    require(not git("status", "--porcelain", "--untracked-files=no"), "Producer tracked checkout is not clean")
     identities = source_files()
     for name, item in identities.items():
         require(git("rev-parse", "HEAD:" + name) == item["git_blob"], "Producer checkout source bytes differ from Git")

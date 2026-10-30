@@ -100,6 +100,7 @@ def probe():
         if receipt.get("input_manifest_sha256") != digest(manifest):
             raise RuntimeError("Windows native input provenance differs")
     if windows and "bundle_delivery" in receipt:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
         import pillow_bundle
         pillow_bundle.verify_delivery(package, receipt)
     decoder = next(root / name for name in selected["files"] if windows or "brotlidec" in name)
