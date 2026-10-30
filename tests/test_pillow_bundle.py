@@ -254,17 +254,19 @@ def test_issuer_rejects_incomplete_authenticated_proof(delivery, change):
     artifact = {"expired": False, "workflow_run": {"id": 123, "head_sha": run["head_sha"], "head_repository_id": bundle.REPOSITORY_ID}, "digest": "sha256:" + "a" * 64}
     names = ("frozen-locks", "deep-learning", "security", "optional-extras", "verify (windows-latest)", "verify (macos-latest)",
         "verify (ubuntu-latest, image)", "native-security (windows-latest)", "native-security (macos-latest)", "native-security (ubuntu-latest, image)")
-    jobs = [{"name": n, "conclusion": "success", "steps": [{"name": "Qualify explicit Windows native bundle", "conclusion": "success"}]} for n in names]
+    jobs = [{"id": i + 1, "name": n, "conclusion": "success", "steps": [{"name": "Qualify explicit Windows native bundle", "conclusion": "success"}]} for i, n in enumerate(names)]
     pc = {"sha": run["head_sha"], "tree": {"sha": producer["source_tree"]}}
     cc = {"sha": "f" * 40, "tree": {"sha": producer["source_tree"]}}
     tree = {"sha": producer["source_tree"]}
-    issuer.qualify_evidence(run, artifact, jobs, pc, cc, tree, tree, cc["sha"])
+    proof = {"method": "authenticated-github-job-log", "job_id": jobs[7]["id"], "run_id": 123,
+             "log_sha256": "a" * 64, "bundle_sha256": approval["bundle_sha256"]}
+    issuer.qualify_evidence(run, artifact, jobs, pc, cc, tree, tree, cc["sha"], proof)
     if change == "pending":
         run["status"] = "in_progress"
     elif change == "job":
         jobs[0]["conclusion"] = "failure"
     elif change == "consumer":
-        jobs[7]["steps"] = []
+        proof = None
     elif change == "tree":
         cc["tree"]["sha"] = "0" * 40
     elif change == "expired":
@@ -274,7 +276,7 @@ def test_issuer_rejects_incomplete_authenticated_proof(delivery, change):
     else:
         run["head_repository"]["id"] = 0
     with pytest.raises(RuntimeError):
-        issuer.qualify_evidence(run, artifact, jobs, pc, cc, tree, tree, cc["sha"])
+        issuer.qualify_evidence(run, artifact, jobs, pc, cc, tree, tree, cc["sha"], proof)
 
 
 def test_explicit_provisioning_requires_all_flags_before_pip(monkeypatch):
@@ -325,3 +327,32 @@ def test_runtime_profile_cannot_fall_back_to_similar_abi(monkeypatch, profile):
     monkeypatch.setattr(bundle.sysconfig, "get_config_var", lambda key: "cp313-win_amd64" if key == "SOABI" else 0)
     with pytest.raises(RuntimeError, match="runtime/ABI"):
         bundle.target_profile()
+
+
+@pytest.mark.parametrize("change", ["valid", "command", "bundle", "runtime", "probe", "duplicate", "oversize"])
+def test_authenticated_log_requires_actual_consumer_outputs(delivery, change):
+    _, _, approval, _ = delivery
+    manifest, native = approval["manifest"], approval["native_receipt"]
+    probe = dict(native, bundle_delivery={"bundle_sha256": approval["bundle_sha256"], "approval_sha256": "a" * 64})
+    result = {"qualification": "CI test fixture only; not operator approval", "profile": copy.deepcopy(bundle.PROFILE),
+              "bundle_sha256": approval["bundle_sha256"], "producer": manifest["producer"], "toolchain": native["toolchain"]}
+    command = "##[group]Run .ci-consumer/Scripts/python.exe tests/qualify_windows_bundle.py"
+    if change == "command":
+        command = "##[group]Run skipped.py"
+    elif change == "bundle":
+        result["bundle_sha256"] = "0" * 64
+    elif change == "runtime":
+        result["profile"]["python"] = "3.13.16"
+    lines = [command, json.dumps(probe), json.dumps(probe), json.dumps(result)]
+    if change == "probe":
+        del lines[1]
+    elif change == "duplicate":
+        lines.append(json.dumps(result))
+    data = ("\r\n".join("2026-10-30T18:10:20.5963931Z " + line for line in lines)).encode()
+    if change == "oversize":
+        data = b"x" * (2 * 1024 * 1024 + 1)
+    if change == "valid":
+        assert issuer.qualify_consumer_log(data, manifest, native, approval["bundle_sha256"], 456, 123)["log_sha256"] == bundle.sha(data)
+    else:
+        with pytest.raises(RuntimeError):
+            issuer.qualify_consumer_log(data, manifest, native, approval["bundle_sha256"], 456, 123)

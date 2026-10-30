@@ -74,8 +74,14 @@ python scripts/approve_pillow_bundle.py --transport /private/transport.zip \
 ```
 
 The issuer queries the real completed successful CI run, all ten required jobs,
-actual consumer qualification step, artifact API ID/name/digest/expiry, repository
-identity, producer/consumer Git commits/trees and critical source blobs. Producer
+actual consumer execution proof, artifact API ID/name/digest/expiry, repository
+identity, producer/consumer Git commits/trees and critical source blobs. Consumer
+execution requires authenticated bounded GitHub job logs with the exact reviewed
+command, two actual successful post-apply native probe receipts and the final
+matching source/bundle/runtime/compiler result. Any available step metadata must
+also show success; empty step arrays are not treated as a passed step. The issuer
+reports the explicit authenticated job-log method, job ID and complete log SHA.
+Missing or differing logs/results fail approval. Producer
 and consumer commits may differ only when their complete trees are identical
 (for example, a reviewed squash merge). It hashes the raw transport before
 opening it, then verifies the exact outer inventory, inner bundle, receipts and
