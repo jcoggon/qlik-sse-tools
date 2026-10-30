@@ -423,6 +423,12 @@ def apply_bundle(bundle, bundle_sha256, approval, approval_sha256):
     work = Path(tempfile.mkdtemp(prefix=".sse-native-transaction-", dir=root))
     completed = False
     committed = {}
+    committed_ids = {}
+    parent_ids = {path: file_id(path)[:2] for path in (root, root / "PIL", root / "pillow-13.0.0.dist-info")}
+    def check_parents():
+        for path, identity in parent_ids.items():
+            custody(path, directory=True)
+            require(file_id(path)[:2] == identity, "Native transaction parent custody changed; backups retained at " + str(work))
     created_license = False
     try:
         (work / "original-extension").write_bytes(original)
@@ -441,16 +447,25 @@ def apply_bundle(bundle, bundle_sha256, approval, approval_sha256):
         require(original_identity == (file_id(root / EXTENSION), file_id(root / RECORD)), "Native preimage changed before commit")
         (root / LICENSE_DIR).mkdir()
         created_license = True
+        parent_ids[root / LICENSE_DIR] = file_id(root / LICENSE_DIR)[:2]
         for name, data in files.items():
+            check_parents()
             path = root / name
             if name == EXTENSION:
                 os.replace(work / name, path)
             else:
-                with path.open("xb") as target:
-                    target.write(data)
+                # Atomic exclusive publication of complete staged bytes on the
+                # same volume. Existing names are never overwritten; no partial
+                # new member can be left by a failing write.
+                os.link(work / name, path)
             committed[name] = data
+            committed_ids[name] = file_id(path)
+            if name != EXTENSION:
+                (work / name).unlink()
+        check_parents()
         os.replace(work / "new-RECORD", root / RECORD)
         committed[RECORD] = new_record
+        committed_ids[RECORD] = file_id(root / RECORD)
         verify_delivery(package, receipt)
         isolated_probe()
         verify_delivery(package, receipt)
@@ -458,8 +473,9 @@ def apply_bundle(bundle, bundle_sha256, approval, approval_sha256):
     except BaseException:
         # Restore only bytes still owned by this transaction; never clobber a
         # concurrent change. Retain backups if custody prevents safe rollback.
+        check_parents()
         for name, data in committed.items():
-            require(read_file(root / name, MAX_EXPANDED) == data,
+            require(file_id(root / name) == committed_ids[name] and read_file(root / name, MAX_EXPANDED) == data,
                     "Rollback custody changed; backups retained at " + str(work))
         if EXTENSION in committed:
             os.replace(work / "original-extension", root / EXTENSION)

@@ -283,3 +283,45 @@ def test_explicit_provisioning_requires_all_flags_before_pip(monkeypatch):
     monkeypatch.setattr(provision.subprocess, "run", lambda *a, **k: pytest.fail("pip/preflight must not run"))
     with pytest.raises(RuntimeError, match="both independent digests"):
         provision.install("core", native_bundle="input.zip")
+
+
+def test_atomic_commit_failure_rolls_back_all_owned_members(delivery, installed, monkeypatch):
+    archive, approved, approval, _ = delivery
+    root, package, original = installed
+    original_record = (root / bundle.RECORD).read_bytes()
+    real_link = bundle.os.link
+    count = 0
+    def fail_link(*args, **kwargs):
+        nonlocal count
+        count += 1
+        if count == 4:
+            raise OSError("simulated exclusive publish failure")
+        return real_link(*args, **kwargs)
+    monkeypatch.setattr(bundle.os, "link", fail_link)
+    with pytest.raises(OSError, match="exclusive publish"):
+        bundle.apply_bundle(archive, approval["bundle_sha256"], approved, bundle.sha(approved.read_bytes()))
+    assert (root / bundle.EXTENSION).read_bytes() == original[bundle.EXTENSION]
+    assert (root / bundle.RECORD).read_bytes() == original_record
+    assert not list(root.glob(".sse-native-transaction-*"))
+    bundle.check_installation(package)
+
+
+def test_read_rejects_parent_alias_before_bytes(tmp_path):
+    parent = tmp_path / "real"
+    parent.mkdir()
+    (parent / "member").write_bytes(b"x")
+    alias = tmp_path / "alias"
+    alias.symlink_to(parent, target_is_directory=True)
+    with pytest.raises(RuntimeError, match="alias"):
+        bundle.read_file(alias / "member", 10)
+
+
+@pytest.mark.parametrize("profile", [("ARM64", "3.13.18"), ("AMD64", "3.13.19")])
+def test_runtime_profile_cannot_fall_back_to_similar_abi(monkeypatch, profile):
+    monkeypatch.setattr(bundle.platform, "system", lambda: "Windows")
+    monkeypatch.setattr(bundle.platform, "machine", lambda: profile[0])
+    monkeypatch.setattr(bundle.platform, "python_version", lambda: profile[1])
+    monkeypatch.setattr(bundle.platform, "python_implementation", lambda: "CPython")
+    monkeypatch.setattr(bundle.sysconfig, "get_config_var", lambda key: "cp313-win_amd64" if key == "SOABI" else 0)
+    with pytest.raises(RuntimeError, match="runtime/ABI"):
+        bundle.target_profile()
