@@ -35,7 +35,6 @@ jobs:
         if: runner.os != 'Linux'
         with:
           python-version: "3.13"
-          cache: pip
       - name: Install macOS native runtime
         if: runner.os == 'macOS'
         run: brew install libomp
