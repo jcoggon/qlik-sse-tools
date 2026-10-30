@@ -284,8 +284,8 @@ class FirecrawlForQlik:
         Can be called from a chart expression or the load script in Qlik.
 
         :Qlik expression examples:
-        :<AAI Connection Name>.Firecrawl_Agent('https://competitor.com', 'Find all tyre product names, brands, sizes, and prices', 'model=spark-1-mini|max_credits=100')
-        :<AAI Connection Name>.Firecrawl_Agent('', 'Find truck tyre pricing from South African retailers', 'model=spark-1-pro|max_credits=500')
+        :<AAI Connection Name>.Firecrawl_Agent('https://competitor.com', 'Find all tyre product names, brands, sizes, and prices', 'model=spark-2|max_credits=100')
+        :<AAI Connection Name>.Firecrawl_Agent('', 'Find truck tyre pricing from South African retailers', 'model=spark-2|max_credits=500')
         """
 
         if not self.client:
@@ -828,7 +828,7 @@ class FirecrawlForQlik:
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.1,
-            max_tokens=4096,
+            max_completion_tokens=4096,
         )
 
         return response.choices[0].message.content

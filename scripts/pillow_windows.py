@@ -73,6 +73,21 @@ setup(name="qlik-pillow-font-security", version="1.0.0", ext_modules=[Extension(
 '''
 
 
+def preflight():
+    root = os.environ.get("ProgramFiles(x86)") or os.environ.get("ProgramFiles", "")
+    vswhere = Path(root) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+    try:
+        location = subprocess.check_output([
+            str(vswhere), "-latest", "-prerelease", "-products", "*",
+            "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "-property", "installationPath",
+        ], text=True).strip()
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise RuntimeError("Windows native repair requires installed MSVC C++ Build Tools and Windows SDK") from error
+    if not location or not (Path(location) / "VC" / "Auxiliary" / "Build" / "vcvarsall.bat").is_file():
+        raise RuntimeError("Windows native repair requires installed MSVC C++ Build Tools and Windows SDK")
+
+
 def build(work, inputs):
     sources = inputs["sources"]
     archives = work / "archives"

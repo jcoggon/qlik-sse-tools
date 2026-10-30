@@ -45,10 +45,10 @@ jobs:
           python -m pip install --require-hashes --only-binary=:all: -r locks/dev.lock
       - run: python -m pip check
       - run: python tests/test_all_tools.py
-      - run: python -m pytest tests/test_registry.py tests/test_version.py tests/test_server_integration.py tests/test_llm_responses.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py
+      - run: python -m pytest tests/test_registry.py tests/test_version.py tests/test_server_integration.py tests/test_llm_responses.py tests/test_sdk_compatibility.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py
       - run: python -m pytest tests/test_security.py tests/test_supply_chain.py
       - run: python -m ruff check core/_security.py scripts/provision.py scripts/export_locks.py scripts/pillow_native.py scripts/pillow_windows.py tests/test_security.py tests/test_keras_security.py tests/test_supply_chain.py
-      - run: python -m ruff check core/_llm.py core/_statsforecast.py core/cloud_api.py tests/test_llm_responses.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py tests/test_server_integration.py
+      - run: python -m ruff check core/_llm.py core/_statsforecast.py core/cloud_api.py tests/test_llm_responses.py tests/test_sdk_compatibility.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py tests/test_server_integration.py
       - run: python -m ruff check --select F core/__main__.py core/_utils.py
       - run: python -m compileall -q core generated tests scripts
       - run: python scripts/package_sse.py --skip-tests --output-dir dist
@@ -128,6 +128,18 @@ jobs:
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/visualization.lock
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/transformers.lock
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/bootstrap.lock
+
+  optional-extras:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
+      - run: python -m pip install --require-hashes --only-binary=:all: -r locks/notebooks.lock -r locks/visualization.lock -r locks/transformers.lock
+      - run: python -m pip check
+      - run: python scripts/smoke_extras.py
 
   python-314-compatibility-probe:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

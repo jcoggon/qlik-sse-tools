@@ -88,3 +88,45 @@ def test_provisioning_requires_maintained_313_venv(monkeypatch):
     monkeypatch.setattr(sys, "version_info", (3, 13, 5))
     with pytest.raises(RuntimeError, match="3.13.18"):
         provision.install("core")
+
+
+@pytest.mark.parametrize("failure", ["preimage", "probe"])
+def test_windows_native_repair_preserves_original_on_failure(tmp_path, monkeypatch, failure):
+    import csv
+    import hashlib
+    native = script("pillow_windows")
+    root = tmp_path / "PIL"
+    root.mkdir()
+    target = root / "font.pyd"
+    original = b"original wheel bytes"
+    target.write_bytes(original)
+    record = tmp_path / "pillow-13.0.0.dist-info" / "RECORD"
+    record.parent.mkdir()
+    with record.open("w", newline="") as output:
+        csv.writer(output).writerow(["PIL/font.pyd", *native.record_hash(target)])
+    original_record = record.read_bytes()
+    inputs = native.load_inputs()
+    inputs.update(extension="font.pyd", preimage_sha256=hashlib.sha256(original).hexdigest() if failure == "probe" else "0" * 64)
+    monkeypatch.setattr(native, "load_inputs", lambda: inputs)
+    package = type("Package", (), {"locate_file": lambda _, path: tmp_path / path})()
+
+    def build(work, _):
+        assert failure == "probe", "Unknown preimage must fail before build"
+        extension = work / "replacement.pyd"
+        extension.write_bytes(b"rebuilt extension")
+        prefix = work / "native"
+        (prefix / "license").mkdir(parents=True)
+        (prefix / "license" / "source.txt").write_text("license")
+        (prefix / "extension.map").write_text("map")
+        fonts = work / "pillow" / "pillow-13.0.0" / "Tests" / "fonts"
+        fonts.mkdir(parents=True)
+        (fonts / "OpenSans.woff2").write_bytes(b"fixture")
+        return extension, prefix
+
+    monkeypatch.setattr(native, "build", build)
+    monkeypatch.setattr(native.subprocess, "run", lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("probe failed")))
+    with pytest.raises(RuntimeError, match="preimage" if failure == "preimage" else "probe failed"):
+        native.repair(package)
+    assert target.read_bytes() == original
+    assert record.read_bytes() == original_record
+    assert sorted(path.name for path in root.iterdir()) == ["font.pyd"]

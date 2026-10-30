@@ -95,6 +95,8 @@ def probe():
     windows = platform.system() == "Windows"
     if windows:
         manifest = Path(__file__).with_name("windows-native-inputs.json")
+        if receipt.get("build_recipe_sha256") != digest(Path(__file__).with_name("pillow_windows.py")):
+            raise RuntimeError("Windows native build recipe provenance differs")
         if receipt.get("input_manifest_sha256") != digest(manifest):
             raise RuntimeError("Windows native input provenance differs")
     decoder = next(root / name for name in selected["files"] if windows or "brotlidec" in name)
@@ -130,6 +132,12 @@ def probe():
         fixture = root / "raptor-native-smoke.woff2"
         if digest(fixture) != receipt.get("font_fixture_sha256"):
             raise RuntimeError("Windows native WOFF2 fixture differs")
+        expected = "sha256=" + base64.urlsafe_b64encode(bytes.fromhex(digest(fixture))).rstrip(b"=").decode()
+        if records["PIL/" + fixture.name][1:] != [expected, str(fixture.stat().st_size)]:
+            raise RuntimeError("Windows native font fixture RECORD differs")
+        for feature in ("raqm", "harfbuzz", "fribidi"):
+            if not features.check(feature):
+                raise RuntimeError("Windows text shaping feature unavailable: " + feature)
         if ImageFont.truetype(str(fixture), 16).getbbox("Raptor")[2] <= 0:
             raise RuntimeError("Windows FreeType WOFF2 decoding failed")
     print(json.dumps(receipt, sort_keys=True))
@@ -232,6 +240,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.preflight:
         platform_policy()
+        if platform.system() == "Windows":
+            from pillow_windows import preflight
+            preflight()
     elif args.repair:
         repair()
     else:
