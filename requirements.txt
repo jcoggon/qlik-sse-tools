@@ -54,3 +54,15 @@ openpyxl==3.1.5
 # === Utilities ===
 holidays==0.100
 tqdm==4.68.4
+
+# === Reviewed transitive security baseline (Gateway #623/#624/#629/#630) ===
+certifi==2026.10.19
+urllib3==2.8.0
+pillow==13.0.0
+aiohttp==3.14.4
+anyio==4.14.2
+multidict==6.9.1
+yarl==1.25.1
+cryptography==50.0.0
+setuptools==84.2.1
+packaging==26.2

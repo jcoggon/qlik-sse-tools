@@ -63,6 +63,7 @@ exit /b 1
 echo Using Python at: & %PYTHON_CMD% --version & echo.
 echo Setting up the Python virtual environment... & echo.
 %PYTHON_CMD% -m venv "%~dp0\qlik-py-env"
+if errorlevel 1 exit /b 1
 echo.
 echo Copying project files to the new directory... & echo.
 xcopy /E /I /Y "%~dp0\generated" "%~dp0\qlik-py-env\generated"
@@ -78,8 +79,8 @@ call activate.bat
 cd /d "%~dp0qlik-py-env"
 echo.
 echo Installing required packages from requirements.txt... & echo.
-python -m pip install --upgrade setuptools pip wheel
-pip install -r "%~dp0\requirements.txt"
+python "%~dp0scripts\provision.py" core
+if errorlevel 1 exit /b 1
 python -m spacy download en_core_web_sm
 echo.
 echo Creating a new firewall rule for TCP port 50055... & echo.

@@ -35,6 +35,8 @@ INCLUDE_PATHS = [
     "requirements-cloud.txt",
     "requirements-deep-learning.txt",
     "requirements-dev.txt",
+    "requirements-bootstrap.in",
+    "locks",
     "pyproject.toml",
     "uv.lock",
     "install_extras.py",

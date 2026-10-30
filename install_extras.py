@@ -117,7 +117,7 @@ BUNDLES = {
 
 def pip_install(*packages):
     """Install packages via pip."""
-    cmd = [sys.executable, "-m", "pip", "install"] + list(packages)
+    cmd = [sys.executable, "-m", "pip", "install", "-c", os.path.join(SCRIPT_DIR, "locks", "constraints.txt")] + list(packages)
     return subprocess.run(cmd, capture_output=False).returncode == 0
 
 
@@ -127,15 +127,16 @@ def pip_install_requirements(filename):
     if not os.path.exists(path):
         print(f"  Missing requirements file: {path}")
         return False
+    bundle = {"requirements-deep-learning.txt": "deep-learning", "requirements-cloud.txt": "cloud"}[filename]
     return subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-r", path],
+        [sys.executable, os.path.join(SCRIPT_DIR, "scripts", "provision.py"), bundle],
         capture_output=False,
     ).returncode == 0
 
 
 def spacy_download(model):
     """Download a spaCy model."""
-    cmd = [sys.executable, "-m", "spacy", "download", model]
+    cmd = [sys.executable, "-m", "spacy", "download", model, "-c", os.path.join(SCRIPT_DIR, "locks", "constraints.txt")]
     return subprocess.run(cmd, capture_output=False).returncode == 0
 
 
@@ -219,7 +220,7 @@ def install_packages(keys):
             print(f"  ⚠️  Unknown package: {key}")
             continue
         pkg = EXTRAS[key]
-        if pkg["check"]():
+        if key not in {"deep_learning", "qlik_cloud"} and pkg["check"]():
             print(f"  ✅  {pkg['name']} — already installed")
             continue
         print(f"\n  📦 Installing {pkg['name']}...")
@@ -229,7 +230,7 @@ def install_packages(keys):
         if success:
             print(f"  ✅  {pkg['name']} — installed successfully")
         else:
-            print(f"  ❌  {pkg['name']} — installation failed")
+            raise SystemExit(f"  {pkg['name']} — installation failed; setup is incomplete")
 
 
 def interactive_mode():

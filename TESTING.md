@@ -1,6 +1,15 @@
 # Qlik Python Tools — Testing & Verification Guide
 
 > Standalone test suite and usage reference for verifying all capabilities work correctly
+
+Security changes additionally require `python scripts/export_locks.py --check`,
+`python -m pytest tests/test_security.py tests/test_supply_chain.py`, and
+`python scripts/pillow_native.py` in the qualified target venv. After explicitly
+installing the frozen deep-learning bundle, run
+`python -m pytest tests/test_keras_security.py` for real `.keras`/HDF5 and persistent
+scikeras round trips. CI keeps these optional imports separate from core.
+Strict audit covers all four complete `locks/*.lock` runtime exports. See
+[Security.md](docs/Security.md) for native repair, supported wheels and holds.
 > without requiring a running Qlik Sense environment.
 
 ---

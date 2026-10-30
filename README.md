@@ -78,6 +78,13 @@ Prophet uses CmdStanPy, which writes temporary model data while fitting. The SSE
 
 ### 2. Initialize the runtime
 
+Use maintained Python **3.13.18+ within the 3.13 series**. Setup installs the
+hash-locked core bundle and verifies Pillow's independent native decoder.
+Native repair currently supports the reviewed Linux AMD64 and macOS ARM64
+wheels. Windows and other native-wheel builds remain under a distribution hold;
+setup reports that qualification gap explicitly. See [Security.md](docs/Security.md)
+for model trust, platform prerequisites and independently installed runtimes.
+
 macOS or Linux:
 
 ```bash
@@ -100,15 +107,11 @@ After changes are tested, create a clean customer download zip with:
 ./qlik-py-env/bin/python scripts/package_sse.py
 ```
 
-By default this runs the standalone verification suite and writes `dist/raptor-qlik-sse-tools.zip`. To publish into the Raptor MCP web artifacts on this machine:
-
-```bash
-./qlik-py-env/bin/python scripts/package_sse.py \
-  --output-dir /Users/jcoggon/Development/qlik-cloud-script-studio/.artifacts \
-  --output-dir /Users/jcoggon/Development/qlik-cloud-script-studio/.web-download-artifacts
-```
-
-On another dev machine, keep the same command shape but point the output directories at that checkout's Raptor repo.
+By default this runs the standalone verification suite and writes
+`dist/raptor-qlik-sse-tools.zip`, including frozen pip locks and native verification
+scripts. Raptor Gateway's dedicated governed builder owns distribution. Import a
+reviewed SSE source commit through that repository's source/lock/hash workflow;
+local artifact copying is not a Raptor publication procedure.
 
 ### 3. Start the SSE
 

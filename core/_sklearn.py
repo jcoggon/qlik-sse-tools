@@ -81,6 +81,7 @@ def _ensure_tensorflow():
     # Also ensure Keras wrapper classes are built in _machine_learning
     _ml._ensure_keras()
 
+import _security as security
 import _utils as utils
 import _machine_learning as _ml
 from _machine_learning import Preprocessor, PersistentModel, TargetTransformer, Reshaper
@@ -2510,7 +2511,7 @@ class SKLearnForQlik:
         kerasbackend.clear_session()
 
         # Load the keras model architecture and weights from disk
-        keras_model = keras.models.load_model(self.path + self.model.name + '.h5')
+        keras_model = security.load_keras_model(keras, self.path + security.model_name(self.model.name) + '.h5')
         # _make_predict_function() removed in modern Keras/TF2
         # Point the model's estimator in the sklearn pipeline to the keras model architecture and weights 
         self.model.pipe.named_steps['estimator'].model_ = keras_model
