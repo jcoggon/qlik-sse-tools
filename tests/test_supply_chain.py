@@ -52,6 +52,7 @@ def test_patched_versions_agree_in_every_frozen_bundle():
 
 def test_native_repair_refuses_unknown_wheel_before_build_or_mutation(tmp_path, monkeypatch):
     native = script("pillow_native")
+    monkeypatch.setattr(native.platform, "system", lambda: "Linux")
     target = tmp_path / "libbrotlidec.fixture"
     target.write_bytes(b"unreviewed native bytes")
     selected = {"files": {target.name: ("replacement", "0" * 64)}}
@@ -63,6 +64,7 @@ def test_native_repair_refuses_unknown_wheel_before_build_or_mutation(tmp_path, 
 
 def test_native_probe_refuses_changed_repair_bytes_before_loading(tmp_path, monkeypatch):
     native = script("pillow_native")
+    monkeypatch.setattr(native.platform, "system", lambda: "Linux")
     target = tmp_path / "libbrotlidec.fixture"
     target.write_bytes(b"changed bytes")
     receipt = {"source_commit": native.SOURCE_COMMIT, "source_archive_sha256": native.SOURCE_SHA256, "libraries": {target.name: "0" * 64}}

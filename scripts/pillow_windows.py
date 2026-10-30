@@ -91,6 +91,7 @@ def build(work, inputs):
     spec.loader.exec_module(module)
     selected = ["zlib", "libpng", "brotli", "freetype", "harfbuzz"]
     module.DEPS = {name: module.DEPS[name] for name in selected}
+    module.DEPS["brotli"]["dir"] = "brotli-db24a98aed38a16de78cc05ca15cdd8dc2a0d92d"
     # All downloads are already hash-verified. Forbid the recipe's live fallback.
     def no_download(*_):
         raise RuntimeError("Unexpected ungoverned native dependency download")
@@ -98,6 +99,7 @@ def build(work, inputs):
     module.cmd_cd = lambda path: f'cd /D "{path}"'
     module.cmd_set = lambda name, value: f'set "{name}={value}"'
     module.cmd_append = lambda name, value: f'set "{name}=%{name}%;{value}"'
+    module.DEPS["brotli"]["build"] = [line.replace("-DBUILD_SHARED_LIBS:BOOL=OFF", "-DBUILD_SHARED_LIBS:BOOL=OFF -DBROTLI_DISABLE_TESTS=OFF") for line in module.DEPS["brotli"]["build"]]
     module.DEPS["brotli"]["build"].extend([
         '"{cmake}" --build . --parallel 2',
         'ctest.exe --output-on-failure --no-tests=error --parallel 2',
