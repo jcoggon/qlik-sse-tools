@@ -166,25 +166,38 @@ The previous security-only revision60d5e1c passed all required jobs in
 [PR CI41062407452](https://github.com/jcoggon/qlik-sse-tools/actions/runs/41062407452).
 That run does not qualify the subsequent broad refresh or Windows rebuild.
 
-Current local evidence is retained under the external checkout's `.task/evidence`:
-41 focused security/supply-chain/SDK/registry/version cases passed; 11 of these
-exercise actual SDK transports. Both real SSE startup/protocol integration cases
-passed after the lazy-import change. Frozen exports, lint, compilation, pip check
-and source ZIP construction passed. Local TensorFlow/macOS loader limitations
-from the earlier run remain separate from Linux CI's real model acceptance.
+Current runtime/build/test source is commit
+`f2bd84065b131d77d5c62cf382c303231930af71`; subsequent documentation-only
+commits do not change those inputs. Final acceptance belongs to the exact head
+shown in [PR #16 Checks](https://github.com/jcoggon/qlik-sse-tools/pull/16/checks).
+The PR description records the successful final run and head after completion.
+All ten required jobs must pass: three functional platforms, three native
+platforms, frozen locks, eight strict audits, real Keras models and optional
+extras. The scheduled Python3.14 probe is separate and non-blocking.
 
-Final CI qualification is being completed before the PR is marked ready.
-The current graph's intermediate CI already passed all eight strict audits,
-frozen exports, five real Keras/scikeras cases and Linux/macOS native checks.
-The first Windows native build passed14 upstream Brotli cases but failed the
-extension link; the omitted Pillow mode-helper source is now included. Optional
-extras' initial smoke configuration was corrected to supply the required span
-extractor. Intermediate failures and cancelled runs are not final acceptance.
+Current local evidence is retained under the external checkout's `.task/evidence`:
+all49 functional/security/supply-chain/SDK/registry/version cases passed,
+including11 actual SDK transport tests and both startup/protocol integration
+cases. The standalone harness reports16 successes but one is an unavailable
+English spaCy model skip:15 cases executed. Frozen exports, lint, compilation,
+pip check and source ZIP construction passed. Local TensorFlow/macOS loader
+limitations from the earlier run remain separate from Linux CI's real model
+acceptance. The refreshed graph has also passed all eight strict audits and
+five real Keras/scikeras cases in CI.
+
+Windows native acceptance requires its14 available upstream Brotli cases,
+actual linked1.2.1 version/decompression readback, WOFF2 rendering, six image
+codecs, original text-feature availability, installed RECORD and provenance
+verification in a separate process. Linux/macOS use12 upstream cases and the
+same version/codec/custody gates. Hosted Windows/macOS Python patch releases
+are functional compatibility checks; deployment still requires maintained
+CPython>=3.13.18. No passing source run implies a customer/runtime upgrade,
+Gateway import, publication or installed acceptance.
 
 The [machine-readable dependency/native/input-hash record](2026-10-30-security-locks.json)
-will identify the qualified code revision separately from evidence-only commits.
-No customer/runtime upgrade, Gateway import, publication or installed acceptance
-follows from source CI.
+records the exact graph, native sources and runtime source identity, with a link
+to the authoritative CI checks. Native output hashes belong to individual build
+receipts rather than a portable source lock.
 
 ## Downstream integration ownership matrix
 
