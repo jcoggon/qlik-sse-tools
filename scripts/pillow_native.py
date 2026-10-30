@@ -136,8 +136,8 @@ def probe():
         if records["PIL/" + fixture.name][1:] != [expected, str(fixture.stat().st_size)]:
             raise RuntimeError("Windows native font fixture RECORD differs")
         for feature in ("raqm", "harfbuzz", "fribidi"):
-            if not features.check(feature):
-                raise RuntimeError("Windows text shaping feature unavailable: " + feature)
+            if features.check(feature) != receipt["original_text_features"][feature]:
+                raise RuntimeError("Windows text shaping availability changed: " + feature)
         if ImageFont.truetype(str(fixture), 16).getbbox("Raptor")[2] <= 0:
             raise RuntimeError("Windows FreeType WOFF2 decoding failed")
     print(json.dumps(receipt, sort_keys=True))

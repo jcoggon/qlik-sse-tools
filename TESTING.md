@@ -694,3 +694,21 @@ def test_my_feature():
 ```
 
 Then add `test_my_feature()` to the `main()` function.
+
+
+## Current dependency and native qualification
+
+Run `python scripts/export_locks.py --check` with frozen uv 0.13.6. CI audits
+all seven complete bundles and bootstrap, verifies functional behavior on Linux,
+Windows and macOS, exercises real Keras models on Linux, and qualifies the three
+reviewed native wheel policies in isolated virtual environments. Windows also
+checks the notebook, Plotly and curated transformer bundles without downloading
+pretrained models. `tests/test_sdk_compatibility.py` uses the actual frozen SDKs
+with intercepted HTTP transports; no paid calls or real credentials are needed.
+
+For native qualification, install `locks/bootstrap.lock` and `locks/core.lock`
+inside a new virtual environment, then run `python scripts/pillow_native.py --repair`
+and `python scripts/pillow_native.py`. Windows requires MSVC C++ Build Tools with
+Windows SDK. A passing Python package audit alone cannot qualify bundled native
+libraries. See [Security.md](docs/Security.md) for supported architectures and
+[the handoff](docs/2026-10-30-security-handoff.md) for exact final CI evidence.

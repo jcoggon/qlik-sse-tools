@@ -8,8 +8,8 @@ independently installed SSE runtime.
 ## Frozen installation
 
 Use maintained CPython **3.13.18 or later in the 3.13 series**. The init scripts
-create `qlik-py-env`, then call `scripts/provision.py core`. Cloud and deep-learning
-extras call that same provisioner with their own bundle. It installs hash-locked
+create `qlik-py-env`, then call `scripts/provision.py core`. Cloud, deep-learning, notebook, visualization and transformer extras call that
+same provisioner with their own bundle. It installs hash-locked
 bootstrap tools and the complete bundle using `--require-hashes`, wheels only,
 and no build isolation, runs `pip check`, then repairs/qualifies Pillow's decoder.
 A native platform preflight runs before package changes. A missing wheel is a qualification failure; setup does not silently fall back to
@@ -17,13 +17,13 @@ an unpinned native source build. An existing importable optional package is stil
 upgraded to the reviewed bundle when explicitly selected.
 
 `requirements*.txt` and `pyproject.toml` are reviewed inputs; `uv.lock` owns the
-resolved dependency graph. `locks/{core,cloud,deep-learning,dev}.lock` are pip
+resolved dependency graph. `locks/{core,cloud,deep-learning,dev,notebooks,visualization,transformers}.lock` are pip
 exports of that graph, including hashes and platform markers. The dev bundle
-includes cloud, while core excludes TensorFlow/Keras. Other optional extensions
-(Jupyter, extra spaCy models, Plotly) retain the graph's constraints; their extra
-packages are not represented as a fully frozen supported runtime bundle.
+includes cloud, while core excludes TensorFlow/Keras. Jupyter, Plotly and curated transformer packages now have complete frozen
+bundles. Pretrained spaCy models and transformer weights remain separately
+selected downloads constrained by the package graph; they are not frozen model assets.
 
-After changing inputs, with uv **0.10.12**:
+After changing inputs, with uv **0.13.6**:
 
 ```sh
 uv lock --refresh-package raptor-qlik-sse-tools
@@ -56,16 +56,21 @@ system package, system trust store or service is changed automatically by this
 repair. In an isolated build with mismatched Command Line Tools, explicitly set
 `SDKROOT` to the matching Xcode SDK for that build only.
 
-**Platform qualification boundary:** Linux AMD64 policy reuses the exact Gateway
-repair inputs. macOS ARM64 has a separately reviewed wheel policy. Windows AMD64
-Pillow statically incorporates Brotli into its FreeType extension (upstream
-`winbuild/build_prepare.py` and `.github/dependencies.json` pin 1.2.0); no safe DLL
-swap is available. Windows, macOS Intel, Linux ARM and other wheels are currently
-unqualified by this upstream repair and provisioning explicitly stops there.
-This is a distribution hold for those platforms, not a claim that their native
-decoder was fixed. A separately reviewed fixed Windows wheel build, with frozen
-native inputs, component provenance and codec/font qualification, remains needed.
-Existing functionality must be retained when that build is qualified.
+**Platform qualification boundary:** reviewed CPython 3.13 wheels on Linux AMD64,
+macOS ARM64 and Windows AMD64 have explicit repair policies. Windows statically
+links Brotli into FreeType. `scripts/pillow_windows.py` rebuilds only `_imagingft`
+from the exact Pillow source and five checksum-pinned native sources in
+`windows-native-inputs.json`, using Pillow's own reviewed MSVC recipe. Installed
+MSVC C++ Build Tools and a Windows SDK are required; setup does not install them.
+The other Pillow image-codec extensions remain in their original wheels.
+The extension exports version/decompression probes for its actual linked
+Brotli copy, and qualification also renders a controlled WOFF2 font through
+FreeType and preserves the wheel's Raqm/HarfBuzz/FriBiDi text shaping availability
+(including optional runtime FriBiDi discovery). Its receipt
+records source, input manifest, recipe, link map, fixture and native binary hashes.
+Unknown original bytes fail before building; failed readback restores the original
+extension and installed RECORD. macOS Intel, Linux ARM, Windows ARM and other
+unreviewed wheels fail closed. Refer to the handoff's CI evidence before acceptance.
 
 Installing this project directly with pip or uv installs the dependency baseline
 but does not execute native repair hooks. Such environments require the same
@@ -78,7 +83,7 @@ Only trusted operators may write model directories, YAML definitions, Python
 custom objects or model artifacts. Do not expose these directories as untrusted
 upload destinations. Pickle/joblib can execute Python during deserialization.
 Keras safe mode is not a sandbox and does not cover all HDF5 behavior. Patched
-Keras **3.15.0**, TensorFlow **2.21.0**, scikeras **0.13.0** and h5py **3.14.0** are
+Keras **3.15.1**, TensorFlow **2.21.0**, scikeras **0.13.0** and h5py **3.14.0** are
 retained as the tested deep-learning coordinates; loading remains lazy.
 
 All three Keras load paths enforce the patched baseline and `safe_mode=True`.

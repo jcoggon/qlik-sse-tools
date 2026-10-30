@@ -1,15 +1,15 @@
-# Canonical SSE security repair and Gateway integration handoff
+# SSE dependency refresh, security repair and Gateway integration handoff
 
 ## Ownership and observed baseline
 
 The canonical repository is [jcoggon/qlik-sse-tools](https://github.com/jcoggon/qlik-sse-tools).
 Its default `master` was freshly fetched at
-`8bb3a2767d9a72513840f4f0e683ae72c093eb1c`. The existing dependency PR
-[#15](https://github.com/jcoggon/qlik-sse-tools/pull/15) proposes 31 broader updates
-without updating `uv.lock`; this change does not adopt that unrelated refresh.
-The two existing local project chats were `notLoaded`, with no overlapping
-active executor observed. Original untracked `.DS_Store` and `graphify-out/`
-were preserved. The existing Graphify query was verified against owning files.
+`8bb3a2767d9a72513840f4f0e683ae72c093eb1c`. PR [#16](https://github.com/jcoggon/qlik-sse-tools/pull/16) now includes the
+requested broad dependency refresh as well as the standalone security repair.
+The existing dependency PR [#15](https://github.com/jcoggon/qlik-sse-tools/pull/15)
+overlaps this work; it was not merged or closed. Requirements, project metadata,
+the universal lock and all pip exports are resolved together. Original untracked
+files and the original internal-drive checkout remain intact.
 
 Gateway's latest comments on [#623](https://github.com/jcoggon/raptor-gateway/issues/623),
 [#624](https://github.com/jcoggon/raptor-gateway/issues/624),
@@ -38,18 +38,18 @@ These are historical downstream input identities, not hashes for this change.
 
 | Component | Canonical source before | Reviewed upstream coordinate | Scope/primary evidence |
 | --- | --- | --- | --- |
-| certifi | uv lock 2026.6.17 | 2026.10.19 | [Maintainer advisory](https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2) names 2026.10.18 as fixed. Audit PYSEC metadata instead recommends 2026.10.19, restoring unaffected roots. Use the later [maintainer release](https://github.com/certifi/python-certifi/releases/tag/2026.10.19), retain an actual compromised ECC G3 root-absence check, and record the metadata disagreement. |
+| certifi | uv lock 2026.6.17 | 2026.10.23 | [Maintainer advisory](https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2) names 2026.10.18 as fixed. Audit PYSEC metadata instead recommends 2026.10.19, restoring unaffected roots. Use the later [maintainer release](https://github.com/certifi/python-certifi/releases/tag/2026.10.19), retain an actual compromised ECC G3 root-absence check, and record the metadata disagreement. |
 | urllib3 | uv lock 2.7.0 | 2.8.0 | [Chunk line](https://github.com/urllib3/urllib3/security/advisories/GHSA-vxq7-64xx-v4gw): >=1.10.3,<2.8.0. [Deflate progress](https://github.com/urllib3/urllib3/security/advisories/GHSA-gh4c-6fx4-qh6g): >=2.6.2,<2.8.0. Configured Requests model endpoints are an owned path; attacker control is unproven. |
-| Keras | canonical 3.15.0; old Gateway lock 3.13.2 | 3.15.0, unchanged | [Maintainer release](https://github.com/keras-team/keras/releases/tag/v3.15.0), [HDF5 validation fix](https://github.com/keras-team/keras/commit/d5a88bdb137c0d3039b8f4bbbe8c7099925cc10c), [shape validation fix](https://github.com/keras-team/keras/commit/4933ea4a5b3fcc24ceacdc276f5bb5dfbd06756c). GHSA-26c4 includes a fixed 3.12.3 backport and affected >=3.13.0,<3.15.0 branch; GHSA-74m6 fixes <3.15.0. All three owned loaders enforce the baseline and safe mode; trusted models remain required. |
+| Keras | canonical 3.15.0; old Gateway lock 3.13.2 | 3.15.1 | [Maintainer release](https://github.com/keras-team/keras/releases/tag/v3.15.0), [HDF5 validation fix](https://github.com/keras-team/keras/commit/d5a88bdb137c0d3039b8f4bbbe8c7099925cc10c), [shape validation fix](https://github.com/keras-team/keras/commit/4933ea4a5b3fcc24ceacdc276f5bb5dfbd06756c). GHSA-26c4 includes a fixed 3.12.3 backport and affected >=3.13.0,<3.15.0 branch; GHSA-74m6 fixes <3.15.0. All three owned loaders enforce the baseline and safe mode; trusted models remain required. |
 | Pillow | uv lock 12.3.0 | 13.0.0 plus separate native repair | [MIC](https://github.com/python-pillow/Pillow/security/advisories/GHSA-22hg-r758-rrw9): 7.2.0–12.3.0, optional olefile and n_frames. [Multi-frame](https://github.com/python-pillow/Pillow/security/advisories/GHSA-v9pv-5gc8-w2m6): >=11.0.0,<=12.3.0, mode-transition decoder path. [FPX JPEG](https://github.com/python-pillow/Pillow/security/advisories/GHSA-5x8w-8jj5-q52h): separate decoder/olefile prerequisite. No owned PIL image-open sink or installed olefile established. No product RCE claimed. |
 | Brotli inside Pillow | reviewed Linux and macOS wheels 1.2.0 | 1.2.1 | [Vendor release](https://github.com/google/brotli/releases/tag/v1.2.1); checksum-pinned source, exact wheel preimages, runtime version/bytes/RECORD and codec/font gates. Updating a Python Brotli package, Node or a system library would not replace this copy. |
-| aiohttp | uv lock 3.14.1 | 3.14.4 | [Resource bounds](https://github.com/aio-libs/aiohttp/security/advisories/GHSA-2g87-pp6c-29x5): <=3.14.3, fixed3.14.4; [C parser](https://github.com/aio-libs/aiohttp/security/advisories/GHSA-cq5v-8q36-5273): <=3.14.2, fixed3.14.3. Maintainer metadata governs. No owned aiohttp service path established. |
-| AnyIO | uv lock already 4.14.2 | 4.14.2 | [Process-pool stderr](https://github.com/agronholm/anyio/security/advisories/GHSA-5p39-cfhj-2xmp) and [IDNA TLS](https://github.com/agronholm/anyio/security/advisories/GHSA-82r6-8w77-94w6): <=4.14.1. [Supplementary groups](https://github.com/agronholm/anyio/security/advisories/GHSA-3w57-8xmc-8v26) lists only4.14.0; do not label4.14.1 affected by that separate finding. Specific feature exposure unproven. |
-| multidict | uv lock 6.7.1 | 6.9.1 | [Items-view reference leak](https://github.com/aio-libs/multidict/security/advisories/GHSA-54p9-h82j-f925): >=6.7.0,<=6.9.0 C extension; items-view reflected union/subtraction. |
+| aiohttp | uv lock 3.14.1 | 3.14.5 | [Resource bounds](https://github.com/aio-libs/aiohttp/security/advisories/GHSA-2g87-pp6c-29x5): <=3.14.3, fixed3.14.4; [C parser](https://github.com/aio-libs/aiohttp/security/advisories/GHSA-cq5v-8q36-5273): <=3.14.2, fixed3.14.3. Maintainer metadata governs. No owned aiohttp service path established. |
+| AnyIO | uv lock already 4.14.2 | 4.15.1 | [Process-pool stderr](https://github.com/agronholm/anyio/security/advisories/GHSA-5p39-cfhj-2xmp) and [IDNA TLS](https://github.com/agronholm/anyio/security/advisories/GHSA-82r6-8w77-94w6): <=4.14.1. [Supplementary groups](https://github.com/agronholm/anyio/security/advisories/GHSA-3w57-8xmc-8v26) lists only4.14.0; do not label4.14.1 affected by that separate finding. Specific feature exposure unproven. |
+| multidict | uv lock 6.7.1 | 7.2.1 | [Items-view reference leak](https://github.com/aio-libs/multidict/security/advisories/GHSA-54p9-h82j-f925): >=6.7.0,<=6.9.0 C extension; items-view reflected union/subtraction. |
 | yarl | uv lock 1.24.2 | 1.25.1 | Required compatibility baseline for aiohttp3.14.4, reused from the real Gateway lock resolution. |
-| cryptography | uv lock 49.0.0 | 50.0.0 | Strict audit surfaced [PKCS#7 oracle](https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5). Requires adaptive untrusted EnvelopedData decryption; no owned route established. Vendor notes OpenSSL backend differences and separate inherent unauthenticated CBC limitations. |
+| cryptography | uv lock 49.0.0 | 50.0.2 | Strict audit surfaced [PKCS#7 oracle](https://github.com/pyca/cryptography/security/advisories/GHSA-g6cj-pr64-35w5). Requires adaptive untrusted EnvelopedData decryption; no owned route established. Vendor notes OpenSSL backend differences and separate inherent unauthenticated CBC limitations. |
 | setuptools | uv lock 83.0.0 | 84.2.1 | Strict audit surfaced [legacy Windows wheel path escape](https://github.com/pypa/setuptools/security/advisories/GHSA-xmj3-9gf7-h52w), >=38.2.2,<84.1.0. No claim that ordinary pip wheel installation uses that legacy API. Build-system and bootstrap pins align. |
-| Dev-only filelock / msgpack / pytest | 3.29.7 /1.2.1 /9.0.2 | 4.2.1 /1.2.3 /9.0.3 | Full dev audit additionally required these updates. They remain outside the core runtime. Primary range and feature notes below; no advisory is ignored. |
+| Dev-only filelock / msgpack / pytest | 3.29.7 /1.2.1 /9.0.2 | 4.2.4 /1.2.4 /9.2.0 | Full dev audit additionally required these updates. They remain outside the core runtime. Primary range and feature notes below; no advisory is ignored. |
 | Python / pip | installers accepted any3.13 / unpinned tool uplift | Python>=3.13.18,<3.14 / pip26.2.2 | Reuse the maintained baseline of closed Gateway#625/#627 for SSE-owned standalone setup; do not reopen or redo the official builder repair. |
 
 Dev-only filelock primary records were reviewed individually: SQLite
@@ -72,7 +72,7 @@ lock mechanism, not these APIs.
 The [msgpack maintainer record](https://github.com/msgpack/msgpack-python/security/advisories/GHSA-j586-36cw-2gc2)
 lists reproduced1.2.2, fixed1.2.3, and explicitly leaves the earliest affected
 release unresolved despite a broader report narrative. Audit labels locked1.2.1
-affected; this change selects1.2.3 without asserting that disputed earlier range.
+affected; this refresh selects1.2.4 without asserting that disputed earlier range.
 The C-extension leak requires strict-map-key validation failures; no owned SSE
 msgpack sink was established. Pytest's [9.0.3 release](https://github.com/pytest-dev/pytest/releases/tag/9.0.3)
 and [maintainer changelog](https://docs.pytest.org/en/stable/changelog.html) support
@@ -84,7 +84,39 @@ name containment and optional mandatory digest provenance. Details, defaults,
 trust limits, frozen generation commands and native platform holds are documented
 in [Security.md](Security.md). Qlik function IDs and argument contracts are unchanged.
 
-## Platform evidence and distribution hold
+## Compatible dependency refresh
+
+The full graph uses the current stable coordinates resolved on 2026-10-30,
+including Firecrawl4.54.0, OpenAI3.41.0, Anthropic2.3.0, NumPy2.5.4,
+SciPy1.18.1, StatsForecast2.1.1, scikit-learn1.9.1, Prophet1.5.0,
+XGBoost3.4.1, LightGBM4.7.0, spaCy3.8.18, FastAPI0.162.0 and Keras3.15.1.
+Notebook7.6.4, JupyterLab4.6.5, Plotly7.1.0 and curated transformers now have
+separate complete hash-locked bundles and security audit gates. uv0.13.6 and
+current CI actions are pinned; gRPC1.85 bindings were regenerated without
+changing the protocol or Qlik function IDs. No Spider service/dependency was
+present, so no new scraping service was introduced.
+
+Compatibility holds are deliberate: latest StatsForecast still requires pandas<3,
+so pandas remains2.3.3; TensorFlow2.21 requires h5py<3.15, so h5py remains3.14.0;
+spaCy3.8 uses Thinc8.3, so the latest curated-transformers2.x/Thinc9 combination
+cannot resolve and curated transformers remains0.3.1. Python remains maintained
+3.13; the 3.14 wheel probe stays separate. Pretrained model/tokenizer assets and
+provider deployment names are unchanged and are not represented as newly qualified.
+
+Real SDK transport tests cover Azure Chat Completions and Responses, Foundry
+Claude including legacy temperature serialization and multi-block output, local
+document extraction, Firecrawl scrape/PDF page limits, search, extraction fallback,
+agent polling and errors. They use synthetic requests intercepted below the SDK,
+with no paid calls or live secrets. Firecrawl's current SDK requires the Python
+`max_pages` field to retain the wire `maxPages` budget. Anthropic2 removed its
+sampling keyword arguments; the adapter explicitly preserves Microsoft's
+[documented Foundry2023 API contract](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/claude-models)
+and forwards existing temperature values through `extra_body`. Chat deployment
+settings and the separate Responses v1 endpoint retain their configured meaning.
+SDK imports are lazy so analytics-only startup retains its existing timing gates.
+
+## Native platform evidence
+
 
 The downloaded Pillow CPython3.13 wheel hashes were independently checked against
 PyPI metadata: Linux AMD64
@@ -108,69 +140,60 @@ Build output hashes are toolchain-specific receipts, not portable wheel hashes.
 Windows statically incorporates Brotli into its FreeType extension according to
 the primary [Pillow build recipe](https://github.com/python-pillow/Pillow/blob/13.0.0/winbuild/build_prepare.py)
 and [dependency manifest](https://github.com/python-pillow/Pillow/blob/13.0.0/.github/dependencies.json).
-Its native repair is **not implemented/qualified**; setup fails explicitly there.
-Other architectures are likewise unqualified. Do not distribute this change as
-a complete Windows security update. Keep the PR draft until the required native
-build and platform acceptance are resolved or scope is explicitly accepted.
+`scripts/pillow_windows.py` rebuilds only its `_imagingft` extension from the
+exact Pillow13 source, zlib-ng2.3.3, libpng1.6.58, Brotli1.2.1, FreeType2.14.3
+and HarfBuzz14.5.0. Every source is SHA-256 pinned in
+`windows-native-inputs.json`. The build uses the pinned upstream Pillow MSVC
+recipe and retains vendored Raqm/FriBiDi support. CMake auxiliary downloads are
+disabled; build and CTest failures cannot be hidden by later copy commands.
+A separately exported wrapper probes the actual statically linked decoder, and
+an upstream WOFF2 fixture exercises FreeType's Brotli path. Image codecs must remain available; text shaping availability must match the
+original wheel, including optional runtime FriBiDi discovery. Installed RECORD, recipe/manifest/source/binary
+hashes and rollback are checked. MSVC C++ Build Tools and Windows SDK must already
+be installed; no system tools are installed automatically. Other architectures
+remain unqualified and fail closed.
 
-Local analytics/protocol/scikeras checks encountered a pre-existing macOS27
-loader rejection in the pinned SciPy1.15.3 `_spropack` Mach-O wheel. The fixed
-StatsForecast2.0.3 dependency constraint requires scipy<1.16, so this task does not
-silently replace the analytics stack or count those checks as passing. Real
-trusted `.keras` and HDF5 round trips passed independently. Cross-platform CI and
-the complete frozen install must be read back on the final PR revision.
+The older local SciPy1.15.3 loader failure belonged to the previous dependency
+graph. The refresh removes StatsForecast's old SciPy<1.16 constraint. Local macOS27
+startup initially exceeded existing test deadlines while importing the much larger
+SDKs; lazy imports restored both startup integration checks within unchanged
+deadlines. The final verification section distinguishes current results from the
+previous security-only revision.
 
 ## Verification record
 
-Code revision `992690c8042f3e417144b8ba2754b0120cef7313` is qualified in
-[PR CI run41061783656](https://github.com/jcoggon/qlik-sse-tools/actions/runs/41061783656).
-The Linux jobs reuse the immutable CPython3.13.18 image already accepted downstream,
-with fixed Debian snapshot/tool inputs. Native jobs mutate only disposable venvs.
-The older hosted macOS/Windows Python3.13 patch releases are functional
-compatibility checks, not independent acceptance of the maintained interpreter
-baseline or Windows native repair.
+The previous security-only revision60d5e1c passed all required jobs in
+[PR CI41062407452](https://github.com/jcoggon/qlik-sse-tools/actions/runs/41062407452).
+That run does not qualify the subsequent broad refresh or Windows rebuild.
 
-- All four complete dependency exports passed strict audit with zero known
-  vulnerabilities: core115 packages, cloud121, deep-learning131, dev145.
-- Frozen universal/optional/bootstrap export reproducibility passed in CI and
-  locally. The dev audit originally found additional tooling issues; these were
-  corrected rather than ignored. Bootstrap/dev pip both read back26.2.2.
-- Linux CPython3.13.18 functional verification passed the standalone suite,
-  12 original protocol/registry/analytics/cloud pytest cases and24 new
-  HTTP/TLS/model-admission/native-custody cases, plus existing/new lint,
-  compilation, pip check and package generation. Windows functional verification
-  also passed these checks. The standalone harness counts an unavailable spaCy
-  English model as a pass; retain that optional-model skip in acceptance.
-- All5 real Linux TensorFlow/scikeras/Keras cases passed: trusted `.keras` and
-  HDF5 round trips, persistent scikeras restoration, controlled virtual-HDF5
-  rejection, and shape-metadata rejection without allocating the declared array.
-- Linux AMD64 and macOS ARM64 native CI qualification passed:12 upstream Brotli
-  CTest cases, actual1.2.1 decoder readback, bounded decompression, six codecs,
-  FreeType and patched installed RECORD. The macOS source build preserves the
-  wheel's macOS11 deployment target. Each installation has its own native-byte
-  receipt; do not substitute the historical Gateway decoder hash for another build.
-- Local external-drive checks passed28 security/supply-chain/registry/version
-  cases, lint, compilation, shell and PowerShell parsing, pip check, package
-  generation and the independent macOS native rebuild. The local macOS27
-  SciPy-loader failure and bounded/stopped TensorFlow import remain local
-  platform findings; successful Linux CI is the separate model/analytics evidence.
+Current local evidence is retained under the external checkout's `.task/evidence`:
+41 focused security/supply-chain/SDK/registry/version cases passed; 11 of these
+exercise actual SDK transports. Both real SSE startup/protocol integration cases
+passed after the lazy-import change. Frozen exports, lint, compilation, pip check
+and source ZIP construction passed. Local TensorFlow/macOS loader limitations
+from the earlier run remain separate from Linux CI's real model acceptance.
 
-The PR remains draft for the explicit unimplemented/unqualified Windows native
-path and other unsupported native architectures. No customer/runtime upgrade,
-Gateway import, publication, or installed acceptance follows from these results.
+Final CI qualification is being completed before the PR is marked ready.
+The current graph's intermediate CI already passed all eight strict audits,
+frozen exports, five real Keras/scikeras cases and Linux/macOS native checks.
+The first Windows native build passed14 upstream Brotli cases but failed the
+extension link; the omitted Pillow mode-helper source is now included. Optional
+extras' initial smoke configuration was corrected to supply the required span
+extractor. Intermediate failures and cancelled runs are not final acceptance.
 
 The [machine-readable dependency/native/input-hash record](2026-10-30-security-locks.json)
-records the exact upstream locks and requirements for downstream review. Its
-qualified code revision is separate from subsequent evidence-only commits.
+will identify the qualified code revision separately from evidence-only commits.
+No customer/runtime upgrade, Gateway import, publication or installed acceptance
+follows from source CI.
 
 ## Downstream integration ownership matrix
 
 | Stage | SSE repository owns | Gateway follow-up / acceptance |
 | --- | --- | --- |
 | Canonical source | Reviewed final commit, pyproject/requirements/uv exports, installer/native repair, regression tests. | Select the final merged SSE commit, not the old23ae07d3 ref or a dirty checkout. Re-fetch current Gateway main before integration. |
-| Dependency import | Hash-locked core/cloud/deep-learning/dev bundles and bootstrap inputs. | Reconcile `resources/supply-chain/qlik-sse-tools/{upstream-requirements.txt,runtime-requirements.in,build-requirements.in,requirements-linux-x86_64-py313.lock,build-requirements-linux-x86_64-py313.lock,security-overrides.json}` with the new source. Existing Gateway Click8.3.1 override conflicts with canonical Click8.4.2; resolve deliberately. Include required optional coordinates without forcing them into standalone core. Do not retain old overrides blindly or remove native repair. |
+| Dependency import | Hash-locked core/cloud/deep-learning/dev/notebook/visualization/transformer bundles and bootstrap inputs. | Reconcile `resources/supply-chain/qlik-sse-tools/{upstream-requirements.txt,runtime-requirements.in,build-requirements.in,requirements-linux-x86_64-py313.lock,build-requirements-linux-x86_64-py313.lock,security-overrides.json}` with the new source. Existing Gateway Click8.3.1 override conflicts with canonical Click8.5.0; resolve deliberately. Include required optional coordinates without forcing them into standalone core. Do not retain old overrides blindly or remove native repair. |
 | Exact source/hash/member policy | Stable source ZIP contents including locks and repair tools. | With a clean checkout at the final full SSE SHA, regenerate the source archive SHA, source requirements SHA, both lock hashes, source marker and Dockerfile pins using `npm run governed:sse:refresh -- --write --source-root=... --source-commit=...`. Review `source.json`, Dockerfile and `scripts/security/governed-sse-package-policy.json` together, including changed command helpers and new members. Run the non-write pin check. Never bypass existing member/hash gates. |
-| Builder/native integration | Exact Linux/macOS wheel custody and source-pinned repair contract. | Retain the already completed Python3.13.18/pip26.2.2 and Linux Pillow/Brotli repair, reconciling receipt format/repair sequencing if adopting the upstream helper. Rebuild a source-derived candidate and read back the interpreter, every reviewed package, actual decoder version/hash, linkage and RECORD in the final runtime prefix. Run TLS/HTTP/model/native/standalone and combined packaging/security checks. |
+| Builder/native integration | Exact Linux/macOS/Windows wheel custody and source-pinned repair contract. | Retain the already completed Python3.13.18/pip26.2.2 and Linux Pillow/Brotli repair, reconciling receipt format/repair sequencing if adopting the upstream helper. Rebuild a source-derived candidate and read back the interpreter, every reviewed package, actual decoder version/hash, linkage and RECORD in the final runtime prefix. Run TLS/HTTP/model/native/standalone and combined packaging/security checks. |
 | Released downloads | No publication in this task. | Dedicated Gateway builder owns authorized publication. Inspect actual ZIP members/hashes and normal download-byte evidence. Source completion and a passing builder are distinct from publication. |
 | Independent installations | Setup enforces supported frozen/native gates but does not update existing installations automatically. | Separately authorized inventory, backup/rollback, platform-specific installation, installed version/native readback and relevant model/HTTP/feature acceptance. No service restart, customer update or fleet action is authorized by this handoff. |
 

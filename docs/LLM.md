@@ -111,3 +111,16 @@ A full model name may be passed with `model=<name>` when an alias is not enough.
 - Keep prompts deterministic for classification and data extraction by using `temperature=0`.
 - Never send secrets, personal data, or customer-confidential text unless the deployment has been approved for that data class.
 - Use short, schema-like prompts when Qlik needs predictable downstream parsing.
+
+
+### SDK refresh compatibility
+
+The frozen runtime uses OpenAI 3.41 and Anthropic 2.3. Azure Chat Completions
+and the separate Azure Responses `/openai/v1/` client retain their configured
+deployments and API versions. Claude Foundry requests explicitly retain
+`anthropic-version: 2023-06-01`, the [documented Microsoft Foundry contract](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/claude-models).
+Anthropic 2 defaults to a newer API and removes the `temperature` Python keyword;
+the adapter sends the existing temperature through `extra_body` for that pinned
+Foundry contract. This keeps existing Qlik temperature arguments and defaults.
+Claude output joins text blocks and skips thinking blocks. Updating the SDK does
+not change deployment names, provision models or make paid acceptance calls.

@@ -123,6 +123,7 @@ def test_windows_native_repair_preserves_original_on_failure(tmp_path, monkeypat
         (fonts / "OpenSans.woff2").write_bytes(b"fixture")
         return extension, prefix
 
+    monkeypatch.setattr(native, "feature_snapshot", lambda: {"raqm": False, "harfbuzz": False, "fribidi": False})
     monkeypatch.setattr(native, "build", build)
     monkeypatch.setattr(native.subprocess, "run", lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("probe failed")))
     with pytest.raises(RuntimeError, match="preimage" if failure == "preimage" else "probe failed"):

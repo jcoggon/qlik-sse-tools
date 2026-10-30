@@ -160,12 +160,23 @@ def build(work, inputs):
     return extension, prefix
 
 
+def feature_snapshot():
+    output = subprocess.check_output([
+        sys.executable, "-c",
+        "import json; from PIL import features; "
+        "print(json.dumps({f: features.check(f) for f in ('raqm', 'harfbuzz', 'fribidi')}))",
+    ], text=True)
+    return json.loads(output)
+
+
 def repair(package):
     inputs = load_inputs()
     root = Path(package.locate_file("PIL"))
     target = root / inputs["extension"]
     receipt_path = root / "raptor-native-security.json"
     verifier = Path(__file__).with_name("pillow_native.py")
+    if receipt_path.is_symlink():
+        raise RuntimeError("Windows native receipt cannot be a symlink")
     if receipt_path.exists():
         subprocess.run([sys.executable, str(verifier), "--probe"], check=True)
         return
@@ -174,8 +185,11 @@ def repair(package):
     record_path = Path(package.locate_file("pillow-13.0.0.dist-info/RECORD"))
     original_record = record_path.read_bytes()
     original = target.read_bytes()
+    original_features = feature_snapshot()
     licenses = root / "raptor-native-licenses"
-    if licenses.exists() or (root / "raptor-native-smoke.woff2").exists():
+    if (licenses.exists() or licenses.is_symlink()
+            or (root / "raptor-native-smoke.woff2").exists()
+            or (root / "raptor-native-smoke.woff2").is_symlink()):
         raise RuntimeError("Unreviewed Windows native license directory")
     with tempfile.TemporaryDirectory(prefix="sse-windows-native-") as directory:
         extension, prefix = build(Path(directory), inputs)
@@ -197,6 +211,7 @@ def repair(package):
                 "sources": {name: source["sha256"] for name, source in inputs["sources"].items()},
                 "link_map_sha256": sha256(prefix / "extension.map"),
                 "font_fixture_sha256": sha256(fixture),
+                "original_text_features": original_features,
             }
             receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
             rows = list(csv.reader(io.StringIO(original_record.decode())))

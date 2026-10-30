@@ -80,9 +80,9 @@ Prophet uses CmdStanPy, which writes temporary model data while fitting. The SSE
 
 Use maintained Python **3.13.18+ within the 3.13 series**. Setup installs the
 hash-locked core bundle and verifies Pillow's independent native decoder.
-Native repair currently supports the reviewed Linux AMD64 and macOS ARM64
-wheels. Windows and other native-wheel builds remain under a distribution hold;
-setup reports that qualification gap explicitly. See [Security.md](docs/Security.md)
+Native repair supports reviewed Linux AMD64, macOS ARM64 and Windows AMD64
+wheels (Windows requires installed MSVC C++ Build Tools and Windows SDK);
+setup stops explicitly on unsupported architectures. See [Security.md](docs/Security.md)
 for model trust, platform prerequisites and independently installed runtimes.
 
 macOS or Linux:
