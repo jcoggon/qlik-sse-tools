@@ -1,0 +1,13 @@
+{
+  "schema": "qlik.sse.windows-native-python/v1",
+  "version": "3.13.18",
+  "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18%2B20261026-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+  "bytes": 22023022,
+  "sha256": "7369f7a35f261222a6ac8b3a87c1c88eeebee8af945d85346202591a64038dd3",
+  "member_count": 3313,
+  "expanded_bytes": 62630534,
+  "uv_metadata_commit": "329bf9448afd9f9088d14a4d57fbc61eb454f117",
+  "uv_metadata_sha256": "81372e1cbff3dd87a786674ef00e01b3743638e3d8e58117d73e32a8e11eae05",
+  "base_python_sha256": "d0a3fdb2f523217cc05cbfa015a249f53f670fe38c72522fa893377c5d2f17d5",
+  "python_dll_sha256": "ed1255ff2c5bdc3b503cc652dcc723376f884661cfb3a9b5f0e430b1f43f9859"
+}

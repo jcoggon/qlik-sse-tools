@@ -1,0 +1,15 @@
+# Native receipts bind exact source bytes across Windows checkout/source ZIP.
+scripts/pillow_windows.py text eol=lf
+scripts/pillow_native.py text eol=lf
+scripts/pillow_bundle.py text eol=lf
+scripts/approve_pillow_bundle.py text eol=lf
+scripts/provision.py text eol=lf
+scripts/windows-native-inputs.json text eol=lf
+scripts/windows-pillow-wheel.json text eol=lf
+locks/core.lock text eol=lf
+locks/bootstrap.lock text eol=lf
+scripts/windows-native-python.json text eol=lf
+scripts/prepare_windows_native_python.py text eol=lf
+.github/workflows/ci.yml text eol=lf
+tests/qualify_windows_bundle.py text eol=lf
+tests/test_pillow_bundle.py text eol=lf

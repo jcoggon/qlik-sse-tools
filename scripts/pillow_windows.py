@@ -12,6 +12,7 @@ import importlib.util
 import io
 import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -59,6 +60,7 @@ SETUP = r'''
 from setuptools import setup, Extension
 from pathlib import Path
 import os
+import platform
 prefix = Path(os.environ["QLIK_NATIVE_BUILD"])
 setup(name="qlik-pillow-font-security", version="1.0.0", ext_modules=[Extension(
     "PIL._imagingft",
@@ -86,6 +88,30 @@ def preflight():
         raise RuntimeError("Windows native repair requires installed MSVC C++ Build Tools and Windows SDK") from error
     if not location or not (Path(location) / "VC" / "Auxiliary" / "Build" / "vcvarsall.bat").is_file():
         raise RuntimeError("Windows native repair requires installed MSVC C++ Build Tools and Windows SDK")
+
+
+def capture_toolchain(output):
+    """Read back the compiler selected by the same build_env.cmd as extension build."""
+    tools = {}
+    for name in ("cl", "link", "cmake"):
+        path = shutil.which(name)
+        if not path:
+            raise RuntimeError("Selected Windows compiler/runtime tool is missing: " + name)
+        tools[name + "_sha256"] = sha256(path)
+    result = subprocess.run([shutil.which("cl"), "/Bv"], capture_output=True, timeout=30)
+    version = result.stdout + result.stderr
+    if len(version) > 128 * 1024:
+        raise RuntimeError("Compiler readback exceeded budget")
+    banner = next((line.strip() for line in version.decode("utf-8", errors="replace").splitlines()
+                   if "C/C++" in line and "Compiler Version" in line), None)
+    if not banner or not os.environ.get("VCToolsVersion") or not os.environ.get("WindowsSDKVersion"):
+        raise RuntimeError("Selected Windows compiler/SDK readback is incomplete")
+    tools.update(schema="qlik.sse.windows-toolchain/v1", python=platform.python_version(),
+                 msvc_version=os.environ["VCToolsVersion"], windows_sdk_version=os.environ["WindowsSDKVersion"],
+                 compiler_banner=banner, compiler_version_output_sha256=hashlib.sha256(version).hexdigest(),
+                 python_executable_sha256=sha256(sys.executable), base_python_sha256=sha256(sys._base_executable),
+                 python_dll_sha256=sha256(Path(sys._base_executable).with_name("python313.dll")))
+    Path(output).write_text(json.dumps(tools, indent=2) + "\n", encoding="utf-8")
 
 
 def build(work, inputs):
@@ -149,6 +175,7 @@ def build(work, inputs):
     script.write_text(
         '@echo off\ncall "' + str(prefix / "build_dep_all.cmd") + '"\nif errorlevel 1 exit /b 1\n'
         + 'call "' + str(prefix / "build_env.cmd") + '"\nif errorlevel 1 exit /b 1\n'
+        + '"' + sys.executable + '" "' + str(Path(__file__).resolve()) + '" --capture-toolchain "' + str(prefix / 'toolchain.json') + '"\nif errorlevel 1 exit /b 1\n'
         + 'cd /D "' + str(pillow) + '"\n'
         + '"' + sys.executable + '" "' + str(setup) + '" build_ext --build-lib "' + str(output) + '"\n'
         + 'if errorlevel 1 exit /b 1\n', encoding="utf-8")
@@ -213,6 +240,7 @@ def repair(package):
                 "link_map_sha256": sha256(prefix / "extension.map"),
                 "font_fixture_sha256": sha256(fixture),
                 "original_text_features": original_features,
+                "toolchain": json.loads((prefix / "toolchain.json").read_text(encoding="utf-8")),
             }
             receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
             rows = list(csv.reader(io.StringIO(original_record.decode())))
@@ -247,3 +275,10 @@ def sources_hash(inputs, name):
 def record_hash(path):
     encoded = base64.urlsafe_b64encode(bytes.fromhex(sha256(path))).rstrip(b"=").decode()
     return ["sha256=" + encoded, str(Path(path).stat().st_size)]
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--capture-toolchain", required=True)
+    capture_toolchain(parser.parse_args().capture_toolchain)

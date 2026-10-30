@@ -118,6 +118,7 @@ def test_windows_native_repair_preserves_original_on_failure(tmp_path, monkeypat
         (prefix / "license").mkdir(parents=True)
         (prefix / "license" / "source.txt").write_text("license")
         (prefix / "extension.map").write_text("map")
+        (prefix / "toolchain.json").write_text("{}")
         fonts = work / "pillow" / "pillow-13.0.0" / "Tests" / "fonts"
         fonts.mkdir(parents=True)
         (fonts / "OpenSans.woff2").write_bytes(b"fixture")

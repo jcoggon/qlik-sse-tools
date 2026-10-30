@@ -118,3 +118,5 @@ aiohttp server or AnyIO process-pool route has been established. Their presence
 through SDK/transitive dependencies is not evidence of exploitation. SDK-level
 HTTP paths and document/image features still require deployment-specific input,
 network and resource-boundary review.
+
+Optional operator-local Windows native delivery is documented in [WindowsNativeBundle.md](WindowsNativeBundle.md). Its explicit approval, exact runtime/source/wheel admission and fresh native checks are separate from the default compiler-based route.
