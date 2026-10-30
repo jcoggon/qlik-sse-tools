@@ -10,9 +10,6 @@ import pandas as pd
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
-from openai import AzureOpenAI, OpenAI
-import anthropic
-
 import _utils as utils
 import ServerSideExtension_pb2 as SSE
 
@@ -26,6 +23,19 @@ CLAUDE_MODELS = {
     'opus': 'AZURE_CLAUDE_OPUS',
     'sonnet': 'AZURE_CLAUDE_SONNET',
 }
+
+# SDK clients load only when a Qlik LLM function is called. The generated SDK
+# modules are large; importing them during analytics-only SSE startup adds delay.
+def AzureOpenAI(**kwargs):
+    from openai import AzureOpenAI as client
+    return client(**kwargs)
+
+
+def OpenAI(**kwargs):
+    from openai import OpenAI as client
+    return client(**kwargs)
+
+
 
 class LLMForQlik:
     """
@@ -366,9 +376,11 @@ class ClaudeForQlik:
         self.debug = False
 
         # Initialize the Anthropic client for Azure AI Foundry
+        import anthropic
         self.client = anthropic.Anthropic(
             api_key=os.environ.get("AZURE_FOUNDRY_API_KEY"),
             base_url=os.environ.get("AZURE_FOUNDRY_CLAUDE_API_ENDPOINT"),
+            default_headers={"anthropic-version": "2023-06-01"},
         )
         self.api_version = os.environ.get("AZURE_FOUNDRY_API_VERSION", "2024-05-01-preview")
 
@@ -450,9 +462,12 @@ class ClaudeForQlik:
         api_kwargs = {
             "model": self.model,
             "messages": messages,
-            "temperature": self.temperature,
             "max_tokens": self.max_tokens,
         }
+
+        # Anthropic 2 removed sampling kwargs. Preserve the documented Foundry
+        # 2023 API contract and its existing temperature through the wire body.
+        api_kwargs["extra_body"] = {"temperature": self.temperature}
 
         # Add system prompt if specified (Anthropic uses a top-level system parameter)
         if self.system_prompt:
@@ -464,7 +479,10 @@ class ClaudeForQlik:
             extra_headers={"api-version": self.api_version},
         )
 
-        return response.content[0].text
+        text = "".join(block.text for block in response.content if block.type == "text")
+        if not text:
+            raise RuntimeError("Claude returned no text content")
+        return text
 
     def _set_params(self, kwargs):
         """

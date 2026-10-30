@@ -60,13 +60,15 @@ def test_azure_openai_real_sdk_contract(monkeypatch, method):
         assert body["store"] is False
 
 
-def test_foundry_anthropic_real_sdk_contract(monkeypatch):
+@pytest.mark.parametrize("temperature", [None, "0.2"])
+def test_foundry_anthropic_real_sdk_contract(monkeypatch, temperature):
     seen = []
 
     def respond(req):
         seen.append(req)
         return httpx.Response(200, json={"id": "msg_1", "type": "message", "role": "assistant", "model": "deployment",
-                                        "content": [{"type": "text", "text": "qualified"}], "stop_reason": "end_turn",
+                                        "content": [{"type": "thinking", "thinking": "synthetic", "signature": "offline"},
+                                                    {"type": "text", "text": "quali"}, {"type": "text", "text": "fied"}], "stop_reason": "end_turn",
                                         "usage": {"input_tokens": 1, "output_tokens": 1}})
 
     original = anthropic.Anthropic
@@ -75,10 +77,15 @@ def test_foundry_anthropic_real_sdk_contract(monkeypatch):
         monkeypatch.setenv("AZURE_FOUNDRY_CLAUDE_API_ENDPOINT", "https://foundry.example.invalid/anthropic/")
         monkeypatch.setenv("AZURE_CLAUDE_SONNET", "deployment")
         monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: original(**kw, http_client=http, max_retries=0))
-        tool = _llm.ClaudeForQlik(request("Synthetic prompt", "max_tokens=123,system_prompt=Be concise"), None)
+        args = "max_tokens=123,system_prompt=Be concise"
+        if temperature is not None:
+            args += ",temperature=" + temperature
+        tool = _llm.ClaudeForQlik(request("Synthetic prompt", args), None)
         assert tool.chat().tolist() == ["qualified"]
     assert seen[0].url.path == "/anthropic/v1/messages"
     assert seen[0].headers["api-version"] == "2024-05-01-preview"
+    assert seen[0].headers["anthropic-version"] == "2023-06-01"
+    assert json.loads(seen[0].content)["temperature"] == (0.7 if temperature is None else float(temperature))
     assert json.loads(seen[0].content)["max_tokens"] == 123
 
 
@@ -111,6 +118,7 @@ def test_firecrawl_real_sdk_contract(monkeypatch, operation):
     monkeypatch.setattr(requests.Session, "send", send)
     tool = _firecrawl.FirecrawlForQlik([], None)
     tool.client = Firecrawl(api_key="offline-test-key", api_url="https://firecrawl.example.invalid", max_retries=0)
+    tool.request_df = _firecrawl.pd.DataFrame({"source": ["https://example.invalid"], "kwargs": [""]})
     tool._set_params("format=markdown,pdf_mode=ocr,pdf_max_pages=2,limit=3,max_credits=10,model=spark-2")
     if operation == "failure":
         with pytest.raises(Exception, match="synthetic key"):
@@ -129,3 +137,37 @@ def test_firecrawl_real_sdk_contract(monkeypatch, operation):
         assert json.loads(seen[0].body)["maxCredits"] == 10
     assert seen
     assert all(urlsplit(req.url).hostname == "firecrawl.example.invalid" for req in seen)
+
+
+@pytest.mark.parametrize("provider", ["openai", "claude"])
+def test_local_document_extraction_uses_real_sdk_contract(monkeypatch, provider):
+    seen = []
+
+    def respond(req):
+        seen.append(req)
+        if provider == "openai":
+            data = {"id": "chat_1", "object": "chat.completion", "created": 1, "model": "deployment",
+                    "choices": [{"index": 0, "message": {"role": "assistant", "content": '{"value":1}'}, "finish_reason": "stop"}]}
+        else:
+            data = {"id": "msg_1", "type": "message", "role": "assistant", "model": "deployment",
+                    "content": [{"type": "text", "text": '{"value":1}'}], "stop_reason": "end_turn",
+                    "usage": {"input_tokens": 1, "output_tokens": 1}}
+        return httpx.Response(200, json=data)
+
+    azure, claude = openai.AzureOpenAI, anthropic.Anthropic
+    with httpx.Client(transport=httpx.MockTransport(respond)) as http:
+        monkeypatch.setenv("AZURE_OPENAI_API_KEY", "offline-test-key")
+        monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://azure.example.invalid")
+        monkeypatch.setenv("AZURE_FOUNDRY_API_KEY", "offline-test-key")
+        monkeypatch.setenv("AZURE_FOUNDRY_CLAUDE_API_ENDPOINT", "https://foundry.example.invalid/anthropic/")
+        monkeypatch.setattr(openai, "AzureOpenAI", lambda **kw: azure(**kw, http_client=http, max_retries=0))
+        monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: claude(**kw, http_client=http, max_retries=0))
+        tool = _firecrawl.FirecrawlForQlik([], None)
+        call = tool._call_openai_for_extraction if provider == "openai" else tool._call_claude_for_extraction
+        assert json.loads(call("Extract JSON", "Synthetic content")) == {"value": 1}
+    body = json.loads(seen[0].content)
+    if provider == "openai":
+        assert body["max_completion_tokens"] == 4096
+    else:
+        assert seen[0].headers["anthropic-version"] == "2023-06-01"
+        assert body["temperature"] == 0.1

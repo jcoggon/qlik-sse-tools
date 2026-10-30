@@ -62,7 +62,7 @@ import os
 prefix = Path(os.environ["QLIK_NATIVE_BUILD"])
 setup(name="qlik-pillow-font-security", version="1.0.0", ext_modules=[Extension(
     "PIL._imagingft",
-    sources=["src/_imagingft.c", "src/thirdparty/raqm/raqm.c",
+    sources=["src/_imagingft.c", "src/libImaging/Mode.c", "src/thirdparty/raqm/raqm.c",
              "src/thirdparty/fribidi-shim/fribidi.c", "qlik_brotli_probe.c"],
     include_dirs=[str(prefix / "inc"), "src"],
     library_dirs=[str(prefix / "lib")],
@@ -111,6 +111,14 @@ def build(work, inputs):
     def no_download(*_):
         raise RuntimeError("Unexpected ungoverned native dependency download")
     module.download_dep = no_download
+    original_write_script = module.write_script
+    def checked_script(name, lines, prefs, verbose):
+        # The upstream recipe copies libraries after its build commands. Preserve
+        # every build/CTest failure instead of allowing a later copy to hide it.
+        if name.startswith("build_dep_"):
+            lines = [item for line in lines for item in (line, "if errorlevel 1 exit /b 1")]
+        original_write_script(name, lines, prefs, verbose)
+    module.write_script = checked_script
     module.cmd_cd = lambda path: f'cd /D "{path}"'
     module.cmd_set = lambda name, value: f'set "{name}={value}"'
     module.cmd_append = lambda name, value: f'set "{name}=%{name}%;{value}"'

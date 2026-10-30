@@ -10,8 +10,6 @@ import pandas as pd
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
-from firecrawl import Firecrawl
-
 import _utils as utils
 import ServerSideExtension_pb2 as SSE
 
@@ -43,6 +41,12 @@ _LLM_PROVIDERS = {
     'openai': 'openai',
     'claude': 'claude',
 }
+
+
+def Firecrawl(**kwargs):
+    from firecrawl import Firecrawl as client
+    return client(**kwargs)
+
 
 
 class FirecrawlForQlik:
@@ -385,7 +389,7 @@ class FirecrawlForQlik:
             if self.pdf_mode:
                 parser["mode"] = self.pdf_mode
             if self.pdf_max_pages:
-                parser["maxPages"] = self.pdf_max_pages
+                parser["max_pages"] = self.pdf_max_pages
             scrape_kwargs['parsers'] = [parser]
 
         result = self.client.scrape(url, **scrape_kwargs)
@@ -426,7 +430,7 @@ class FirecrawlForQlik:
             if self.pdf_mode:
                 parser["mode"] = self.pdf_mode
             if self.pdf_max_pages:
-                parser["maxPages"] = self.pdf_max_pages
+                parser["max_pages"] = self.pdf_max_pages
             scrape_kwargs['parsers'] = [parser]
 
         try:
@@ -842,6 +846,7 @@ class FirecrawlForQlik:
         client = anthropic.Anthropic(
             api_key=os.environ.get("AZURE_FOUNDRY_API_KEY"),
             base_url=os.environ.get("AZURE_FOUNDRY_CLAUDE_API_ENDPOINT"),
+            default_headers={"anthropic-version": "2023-06-01"},
         )
         api_version = os.environ.get("AZURE_FOUNDRY_API_VERSION", "2024-05-01-preview")
         model = os.environ.get("AZURE_CLAUDE_SONNET", "claude-sonnet-4-5")
@@ -850,12 +855,15 @@ class FirecrawlForQlik:
             model=model,
             system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}],
-            temperature=0.1,
             max_tokens=4096,
+            extra_body={"temperature": 0.1},
             extra_headers={"api-version": api_version},
         )
 
-        return response.content[0].text
+        text = "".join(block.text for block in response.content if block.type == "text")
+        if not text:
+            raise RuntimeError("Claude returned no text content")
+        return text
 
     # =========================================================================
     # Parameter handling
