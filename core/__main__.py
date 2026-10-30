@@ -11,6 +11,7 @@ import warnings
 from concurrent import futures
 
 from _version import __version__
+from _server_bind import DEFAULT_BIND_HOST, bind_address, parse_bind_host
 
 def _status(msg):
     """Print a startup status message and flush immediately."""
@@ -1282,13 +1283,15 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
     Implementation of the Server connecting to gRPC.
     """
 
-    def Serve(self, port, pem_dir, workers=DEFAULT_WORKERS, max_message_length=MAX_MESSAGE_LENGTH):
+    def Serve(self, port, pem_dir, workers=DEFAULT_WORKERS, max_message_length=MAX_MESSAGE_LENGTH, host=DEFAULT_BIND_HOST):
         """
         Server
         :param port: port to listen on.
         :param pem_dir: Directory including certificates
+        :param host: Validated IPv4/IPv6 bind address; loopback by default
         :return: None
         """
+        address = bind_address(host, port)
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=workers),
         options=[('grpc.max_send_message_length', max_message_length),('grpc.max_receive_message_length', max_message_length)])
         
@@ -1305,15 +1308,15 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             with open(os.path.join(pem_dir, 'root_cert.pem'), 'rb') as f:
                 root_cert = f.read()
             credentials = grpc.ssl_server_credentials([(private_key, cert_chain)], root_cert, True)
-            bound_port = server.add_secure_port('[::]:{}'.format(port), credentials)
-            logging.info('*** Running server in secure mode on port: {} ***'.format(port))
+            bound_port = server.add_secure_port(address, credentials)
         else:
             # Insecure connection
-            bound_port = server.add_insecure_port('[::]:{}'.format(port))
-            logging.info('*** Running server in insecure mode on port: {} ***'.format(port))
+            bound_port = server.add_insecure_port(address)
 
         if bound_port == 0:
-            raise RuntimeError(f'Could not bind the SSE server to port {port}')
+            raise RuntimeError(f'Could not bind the SSE server at {address}')
+        address = bind_address(host, bound_port)
+        logging.info('*** Running server in %s mode at %s ***', 'secure' if pem_dir else 'insecure', address)
 
         server.start()
         health_servicer.set('', health_pb2.HealthCheckResponse.SERVING)
@@ -1347,7 +1350,8 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             f'  Qlik Python Tools - Server Side Extension\n'
             f'{sep}\n'
             f'  Status:      RUNNING\n'
-            f'  Port:        {port}\n'
+            f'  Bind:        {address}\n'
+            f'  Port:        {bound_port}\n'
             f'  Mode:        {secure_str}\n'
             f'  Workers:     {workers}\n'
             f'  Max message: {max_message_length // (1024 * 1024)} MB\n'
@@ -1391,6 +1395,8 @@ class AAIException(Exception):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--host', type=parse_bind_host, default=os.environ.get('QLIK_SSE_HOST', DEFAULT_BIND_HOST),
+                        help='IPv4/IPv6 listener address (default: 127.0.0.1; localhost is an alias)')
     parser.add_argument('--port', nargs='?', default=_DEFAULT_PORT)
     parser.add_argument('--pem_dir', nargs='?')
     parser.add_argument('--definition_file', nargs='?', default='functions.json')
@@ -1399,6 +1405,10 @@ if __name__ == '__main__':
     parser.add_argument('--check', action='store_true', help='Print startup diagnostics as JSON and exit')
     parser.add_argument('--require_tls', action='store_true', help='Refuse to start unless --pem_dir is configured')
     args = parser.parse_args()
+    try:
+        address = bind_address(args.host, args.port)
+    except ValueError as error:
+        parser.error(str(error))
 
     # need to locate the file when script is called from outside it's location dir.
     def_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.definition_file)
@@ -1416,6 +1426,8 @@ if __name__ == '__main__':
             'function_count': function_count,
             'modules': _MODULES,
             'port': str(args.port),
+            'host': args.host,
+            'bind_address': address,
             'workers': args.workers,
             'max_message_mb': args.max_message_mb,
             'tls_configured': bool(args.pem_dir),
@@ -1428,4 +1440,5 @@ if __name__ == '__main__':
         args.pem_dir,
         workers=args.workers,
         max_message_length=args.max_message_mb * 1024 * 1024,
+        host=args.host,
     )

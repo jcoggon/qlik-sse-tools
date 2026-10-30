@@ -15,7 +15,7 @@ Set-Location $Core
 while ($true) {
     $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Add-Content -Path (Join-Path $Logs "sse-wrapper.log") -Value "=== starting Qlik SSE at $stamp ==="
-    & $Python -X utf8 -u "__main__.py" --port $Port *> $ProcessLog
+    & $Python -X utf8 -u "__main__.py" --port $Port @args *> $ProcessLog
     $exitCode = $LASTEXITCODE
     $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Add-Content -Path (Join-Path $Logs "sse-wrapper.log") -Value "=== exited at $stamp with code $exitCode; restarting in 5 seconds ==="

@@ -127,9 +127,19 @@ Windows:
 Qlik-Py-Start.bat
 ```
 
-The server listens on port `50055` by default.
+The server listens on **`127.0.0.1:50055`** by default. Set `QLIK_SSE_HOST`
+or pass `--host` to select another literal IPv4/IPv6 address. Start scripts
+forward command-line options, for example `./Qlik-Py-Start.sh --host ::1`.
+`localhost` explicitly selects IPv4 loopback; DNS names and resolver URLs are
+not accepted as listener addresses.
 
-Run a non-listening diagnostic check with `cd core && ../qlik-py-env/bin/python __main__.py --check`. Port, worker count, message size, and shutdown grace are configurable through `.env`.
+**Existing remote clients:** earlier releases implicitly listened on `[::]`.
+Before upgrading a remote deployment, select the intended interface with
+`--host`/`QLIK_SSE_HOST` and retain its mutual-TLS certificate configuration.
+See [Operations](docs/Operations.md#mutual-tls) for explicit remote examples.
+Changing the Qlik connection host does not restrict the Python listener.
+
+Run a non-listening diagnostic check with `cd core && ../qlik-py-env/bin/python __main__.py --check`. The configured bind address is included in diagnostics. Host, port, worker count, message size, and shutdown grace are configurable through `.env`.
 
 ### 4. Configure the analytic connection in Qlik
 
@@ -138,7 +148,7 @@ Use these defaults unless you intentionally change them:
 | Setting | Value |
 | --- | --- |
 | Name | `PythonSSE` |
-| Host | `localhost` |
+| Host | `127.0.0.1` |
 | Port | `50055` |
 
 Example usage from Qlik:

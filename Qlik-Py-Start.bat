@@ -11,5 +11,5 @@ xcopy /E /Y /Q "%SCRIPT_DIR%generated\*" "%SCRIPT_DIR%qlik-py-env\generated\"
 if exist "%SCRIPT_DIR%.env" copy /Y "%SCRIPT_DIR%.env" "%SCRIPT_DIR%qlik-py-env\.env"
 
 cd /d "%SCRIPT_DIR%qlik-py-env\core"
-python -u __main__.py
+python -u __main__.py %*
 pause
