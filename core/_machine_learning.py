@@ -46,6 +46,7 @@ def _ensure_keras():
     KERAS_AVAILABLE = True
     _build_keras_classes()
 
+import _security as security
 import _utils as utils
 
 class PersistentModel:
@@ -72,6 +73,7 @@ class PersistentModel:
         """
         
         # Create string for path and file name
+        name = security.model_name(name)
         f = path + name + '.joblib'
 
         # Create a path for the lock file
@@ -131,7 +133,8 @@ class PersistentModel:
         If the model is not found throw an exception.
         """
         
-        with open(Path(path + name + '.joblib'), 'rb') as f:
+        name = security.model_name(name)
+        with security.trusted_model_file(path + name + '.joblib').open('rb') as f:
             self = joblib.load(f)
         
         # If using Keras we need to load the HDF5 file as well
@@ -144,7 +147,7 @@ class PersistentModel:
             kerasbackend.clear_session()
             
             # Load the keras model architecture and weights from disk
-            keras_model = keras.models.load_model(path + name + '.h5')
+            keras_model = security.load_keras_model(keras, path + name + '.h5')
             # _make_predict_function() removed in modern Keras/TF2
             # Point the estimator in the sklearn pipeline to the keras model architecture and weights 
             self.pipe.named_steps['estimator'].model_ = keras_model

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Require Python 3.13. The current native analytics stack does not yet publish
@@ -66,8 +67,7 @@ fi
 
 echo ""
 echo "Installing required packages from requirements.txt..."
-python -m pip install --upgrade setuptools pip wheel
-pip install -r "$SCRIPT_DIR/requirements.txt"
+python "$SCRIPT_DIR/scripts/provision.py" core
 python -m spacy download en_core_web_sm
 
 echo ""

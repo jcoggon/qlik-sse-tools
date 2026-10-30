@@ -2,12 +2,10 @@ import os
 import sys
 import time
 import yaml
-import json
 import pickle
 import string
 import pathlib
 import warnings
-import requests
 import threading
 import numpy as np
 import pandas as pd
@@ -35,6 +33,7 @@ def _ensure_tensorflow():
     keras = _keras
     kerasbackend = _kerasbackend
 
+import _security as security
 import _utils as utils
 import ServerSideExtension_pb2 as SSE
 
@@ -355,7 +354,7 @@ class CommonFunction:
 
         # Get model meta data from the YAML file
         try:
-            with open(self.path + model_name + ".yaml", 'r') as stream:
+            with security.model_definition(self.path, model_name).open(encoding="utf-8") as stream:
                 model_meta = yaml.safe_load(stream)
         except FileNotFoundError as fe:
             err = "Model definition file not found. A YAML file with the model path, type and features needs to be placed in ../models/"
@@ -372,10 +371,15 @@ class CommonFunction:
             # Get the preprocessor if required
             if 'preprocessor' in model_meta:
                 prep_path = model_meta['preprocessor']
+                security.trusted_model_file(prep_path, model_meta.get("preprocessor_sha256"))
                 self.prep = self._get_model_sklearn(prep_path)
             else:
                 self.prep = None
             
+            # YAML and local artifacts are operator-managed, executable trusted inputs.
+            if model_type not in ["rest", "restful"]:
+                security.trusted_model_file(model_path, model_meta.get("sha256"))
+
             # Load the model
             if model_type in ['sklearn', 'scikit-learn']:
                 self.model = self._get_model_sklearn(model_path)
@@ -421,7 +425,7 @@ class CommonFunction:
         self._add_model_path(model_path)
 
         # Load the saved pipeline from disk
-        with open(model_path, 'rb') as file:
+        with security.trusted_model_file(model_path).open('rb') as file:
             model = pickle.load(file)
         
         return model
@@ -455,7 +459,7 @@ class CommonFunction:
                     kerasbackend.clear_session()
 
                     # Load the keras model architecture and weights from disk
-                    model = keras.models.load_model(model_path)
+                    model = security.load_keras_model(keras, model_path)
                     # _make_predict_function() removed in modern Keras/TF2
                     break
                 finally:
@@ -485,7 +489,7 @@ class CommonFunction:
             self.model['json'] = dict(X.loc[i,:].astype("str").T) if payload_header is None else {payload_header: dict(X.loc[i,:].astype("str").T)}
 
             # Send the REST request and store parse the JSON response
-            response = json.loads(requests.post(**self.model).text)
+            response = security.post_prediction(self.model)
             # Add response for the current sample to a list
             predictions.append(response if self.response_section is None else response[self.response_section])
 

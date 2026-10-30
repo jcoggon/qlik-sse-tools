@@ -1,56 +1,67 @@
 # Qlik Python Tools - core runtime requirements
 # Python 3.13 is supported. Keep this file aligned with pyproject.toml.
 #
-# StatsForecast 2.0.3 currently requires scipy<1.16. The NumPy/SciPy pins below
-# deliberately preserve that current release instead of allowing pip to silently
-# backtrack StatsForecast to 2.0.1.
+# StatsForecast 2.1.1 still requires pandas<3. Keep pandas 2.3.3 until its
+# maintainer supports pandas 3; current SciPy no longer needs the old <1.16 hold.
 
 # === Core / Server ===
-grpcio==1.82.1
-grpcio-health-checking==1.82.1
-protobuf==7.35.1
-python-dotenv==1.2.2
+grpcio==1.85.0
+grpcio-health-checking==1.85.0
+protobuf==7.36.2
+python-dotenv==1.2.4
 PyYAML==6.0.3
 requests==2.34.2
-click==8.4.2
+click==8.5.0
 
 # === Data / Numerics ===
-numpy==2.4.2
+numpy==2.5.4
 pandas==2.3.3
-scipy==1.15.3
-joblib==1.5.3
+scipy==1.18.1
+joblib==1.6.0
 
 # === Machine Learning ===
-scikit-learn==1.9.0
-xgboost==3.3.0
-lightgbm==4.6.0
+scikit-learn==1.9.1
+xgboost==3.4.1
+lightgbm==4.7.0
 hdbscan==0.8.44
 
 # === Forecasting ===
-prophet==1.3.0
+prophet==1.5.0
 cmdstanpy==1.3.0
-statsforecast==2.0.3
-utilsforecast==0.2.16
+statsforecast==2.1.1
+utilsforecast==0.2.17
 
 # === NLP ===
-spacy==3.8.14
+spacy==3.8.18
 
 # === Association Rules ===
 efficient_apriori==2.0.6
 
 # === LLM Integrations ===
-openai==2.45.0
-anthropic==0.116.0
+openai==3.41.0
+anthropic==2.3.0
 
 # === Forecast visualization dependency ===
-matplotlib==3.11.0
+matplotlib==3.11.2
 
 # === Web Scraping & Document Parsing ===
-firecrawl-py==4.32.0
+firecrawl-py==4.54.0
 pdfplumber==0.11.10
 python-docx==1.2.0
 openpyxl==3.1.5
 
 # === Utilities ===
-holidays==0.100
-tqdm==4.68.4
+holidays==0.107
+tqdm==4.70.1
+
+# === Reviewed transitive security baseline (Gateway #623/#624/#629/#630) ===
+certifi==2026.10.23
+urllib3==2.8.0
+pillow==13.0.0
+aiohttp==3.14.5
+anyio==4.15.1
+multidict==7.2.1
+yarl==1.25.1
+cryptography==50.0.2
+setuptools==84.2.1
+packaging==26.3

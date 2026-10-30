@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Refresh the supported analytics, scraping, LLM, cloud and developer dependency graph, including Firecrawl 4.54, OpenAI 3.41, Anthropic 2.3, StatsForecast 2.1 and SciPy 1.18.
+- Freeze notebook, Plotly and curated transformer extras with complete hashed exports; update and pin CI actions and uv.
+- Repair Pillow's independent Brotli decoder to 1.2.1 on reviewed Windows AMD64, Linux AMD64 and macOS ARM64 wheels, retaining native provenance and codec/font checks.
+- Bound REST model responses, constrain local model names and enforce patched Keras safe loading with optional artifact digest admission.
+- Regenerate Python gRPC bindings with current tools while preserving the SSE protocol and function registry.
+- Retain pandas 2.3.3, h5py 3.14.0 and curated transformers 0.3.1 where current upstream dependency constraints require them. Pretrained model assets remain separate downloads.
+
 ## 3.1.0 - 2026-07-13
 
 ### Added

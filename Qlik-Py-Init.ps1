@@ -95,10 +95,8 @@ Write-Output "Using virtual environment: $(& $VenvPython --version)"
 
 Write-Output ""
 Write-Output "Installing required packages..."
-& $VenvPython -m pip install --upgrade setuptools pip wheel
-if ($LASTEXITCODE -ne 0) { throw "Failed to upgrade pip tooling in the virtual environment." }
-& $VenvPython -m pip install -r $PSScriptRoot\requirements.txt
-if ($LASTEXITCODE -ne 0) { throw "Failed to install the core requirements." }
+& $VenvPython "$PSScriptRoot\scripts\provision.py" core
+if ($LASTEXITCODE -ne 0) { throw "Frozen provisioning/native qualification failed; setup is incomplete." }
 & $VenvPython -m spacy download en_core_web_sm
 if ($LASTEXITCODE -ne 0) { throw "Failed to install the spaCy English model." }
 
