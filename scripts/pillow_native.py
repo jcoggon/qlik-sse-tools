@@ -48,14 +48,18 @@ def digest(path):
         return hashlib.file_digest(source, "sha256").hexdigest()
 
 
-def policy():
+def platform_policy():
     key = (platform.system(), platform.machine())
     if key not in POLICIES:
         raise RuntimeError(f"Pillow native qualification unavailable for {key}; see docs/Security.md. No security acceptance claimed.")
+    return POLICIES[key]
+
+
+def policy():
+    selected = platform_policy()
     package = importlib.metadata.distribution("pillow")
     if package.version != "13.0.0":
         raise RuntimeError("Unreviewed Pillow version")
-    selected = POLICIES[key]
     root = Path(package.locate_file(selected["root"]))
     if root.is_symlink() or root.resolve() != root or not root.is_dir():
         raise RuntimeError("Pillow library custody differs")
@@ -202,8 +206,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repair", action="store_true")
     parser.add_argument("--probe", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--preflight", action="store_true", help="Check platform support before installing any packages")
     args = parser.parse_args()
-    if args.repair:
+    if args.preflight:
+        platform_policy()
+    elif args.repair:
         repair()
     else:
         probe()

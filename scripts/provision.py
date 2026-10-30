@@ -13,6 +13,7 @@ def install(bundle):
         raise RuntimeError("Use maintained CPython 3.13.18 or later in the 3.13 series")
     if sys.prefix == sys.base_prefix:
         raise RuntimeError("Provisioning requires a virtual environment")
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "pillow_native.py"), "--preflight"], check=True)
     for filename in ("bootstrap.lock", bundle + ".lock"):
         subprocess.run([
             sys.executable, "-m", "pip", "install", "--require-hashes", "--only-binary=:all:",

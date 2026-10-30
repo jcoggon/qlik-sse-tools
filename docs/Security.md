@@ -12,7 +12,7 @@ create `qlik-py-env`, then call `scripts/provision.py core`. Cloud and deep-lear
 extras call that same provisioner with their own bundle. It installs hash-locked
 bootstrap tools and the complete bundle using `--require-hashes`, wheels only,
 and no build isolation, runs `pip check`, then repairs/qualifies Pillow's decoder.
-A missing wheel is a qualification failure; setup does not silently fall back to
+A native platform preflight runs before package changes. A missing wheel is a qualification failure; setup does not silently fall back to
 an unpinned native source build. An existing importable optional package is still
 upgraded to the reviewed bundle when explicitly selected.
 

@@ -15,11 +15,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            image: python:3.13.18-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f
+          - os: windows-latest
+          - os: macos-latest
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install fixed Linux CI prerequisites
+        if: runner.os == 'Linux'
+        run: bash .github/scripts/linux-prerequisites.sh
       - uses: actions/setup-python@v5
+        if: runner.os != 'Linux'
         with:
           python-version: "3.13"
           cache: pip
@@ -42,6 +51,7 @@ jobs:
 
   frozen-locks:
     runs-on: ubuntu-latest
+    container: python:3.13.18-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -53,13 +63,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            image: python:3.13.18-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f
+          - os: macos-latest
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install fixed Linux CI prerequisites
+        if: runner.os == 'Linux'
+        run: bash .github/scripts/linux-prerequisites.sh
       - uses: actions/setup-python@v5
+        if: runner.os != 'Linux'
         with:
           python-version: "3.13"
+      - name: Create isolated native qualification environment
+        shell: bash
+        run: |
+          python -m venv .ci-env
+          python -c 'import os, pathlib; p = pathlib.Path(".ci-env/bin").resolve(); open(os.environ["GITHUB_PATH"], "a").write(str(p) + "\n")'
       - run: >-
           python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
       - run: >-
@@ -70,11 +93,10 @@ jobs:
 
   deep-learning:
     runs-on: ubuntu-latest
+    container: python:3.13.18-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+      - run: bash .github/scripts/linux-prerequisites.sh
       - run: >-
           python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
       - run: >-
