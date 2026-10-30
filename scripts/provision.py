@@ -25,5 +25,5 @@ def install(bundle):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("bundle", choices=["core", "cloud", "deep-learning", "dev"])
+    parser.add_argument("bundle", choices=["core", "cloud", "deep-learning", "dev", "notebooks", "visualization", "transformers"])
     install(parser.parse_args().bundle)

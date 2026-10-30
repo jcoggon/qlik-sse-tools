@@ -1,0 +1,61 @@
+{
+  "pillow_dependency_versions": {
+    "brotli": "1.2.1",
+    "bzip2": "1.0.8",
+    "freetype": "2.14.3",
+    "fribidi": "1.0.17",
+    "harfbuzz": "14.5.0",
+    "jpegturbo": "3.2.0",
+    "lcms2": "2.19.1",
+    "libavif": "1.4.2",
+    "libimagequant": "4.4.1",
+    "libpng": "1.6.58",
+    "libwebp": "1.6.0",
+    "libxcb": "1.17.0",
+    "openjpeg": "2.5.4",
+    "tiff": "4.7.2",
+    "xz": "5.8.4",
+    "zlib-ng": "2.3.3",
+    "zstd": "1.5.7"
+  },
+  "sources": {
+    "zlib": {
+      "filename": "zlib-ng-2.3.3.tar.gz",
+      "url": "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/2.3.3.tar.gz",
+      "sha256": "f9c65aa9c852eb8255b636fd9f07ce1c406f061ec19a2e7d508b318ca0c907d1",
+      "size": 2447397
+    },
+    "libpng": {
+      "filename": "libpng-1.6.58.tar.gz",
+      "url": "https://raw.githubusercontent.com/python-pillow/pillow-depends/main/libpng-1.6.58.tar.gz",
+      "sha256": "a9d4df463d36a6e5f9c29bd6f4967312d17e996c1854f3511f833924eb1993cf",
+      "size": 1592190
+    },
+    "brotli": {
+      "filename": "brotli-1.2.1.tar.gz",
+      "url": "https://github.com/google/brotli/archive/db24a98aed38a16de78cc05ca15cdd8dc2a0d92d.tar.gz",
+      "sha256": "113b9685dfc14dd2f3360d077283266eec2fbdfb0fe3e5600f11be151da0d68e",
+      "size": 646758
+    },
+    "freetype": {
+      "filename": "freetype-2.14.3.tar.gz",
+      "url": "https://raw.githubusercontent.com/python-pillow/pillow-depends/main/freetype-2.14.3.tar.gz",
+      "sha256": "e61b31ab26358b946e767ed7eb7f4bb2e507da1cfefeb7a8861ace7fd5c899a1",
+      "size": 4134916
+    },
+    "harfbuzz": {
+      "filename": "harfbuzz-14.5.0.tar.xz",
+      "url": "https://raw.githubusercontent.com/python-pillow/pillow-depends/main/harfbuzz-14.5.0.tar.xz",
+      "sha256": "b7132e148358a45185c9feafd049dbaf243649d3c44414b3534d9c95d18592b9",
+      "size": 20262956
+    },
+    "pillow": {
+      "filename": "pillow-13.0.0.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/ce/a4/9cc30690a394a8305e8be4c9036aa16d0dfddadd09079860b582f562496d/pillow-13.0.0.tar.gz",
+      "size": 47058631,
+      "sha256": "cdcd1ba258178f7356d74170c9a81ba4eab6a5d55748bc402a5a2a6fe6be3510"
+    }
+  },
+  "preimage_sha256": "91f0a8e145163803637620517bad32ad5cb551d8a4dc02c3309811af24dbcbcc",
+  "extension": "_imagingft.cp313-win_amd64.pyd"
+}

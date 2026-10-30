@@ -39,10 +39,12 @@ def test_core_does_not_install_optional_tensorflow():
 
 
 def test_patched_versions_agree_in_every_frozen_bundle():
-    expected = {"certifi": "2026.10.19", "urllib3": "2.8.0", "pillow": "13.0.0", "aiohttp": "3.14.4", "anyio": "4.14.2", "multidict": "6.9.1", "yarl": "1.25.1"}
+    from packaging.version import Version
+    minimum = {"certifi": "2026.10.19", "urllib3": "2.8.0", "pillow": "13.0.0", "aiohttp": "3.14.4", "anyio": "4.14.2", "multidict": "6.9.1", "yarl": "1.25.1"}
     packages = tomllib.loads((ROOT / "uv.lock").read_text())["package"]
     coordinates = {p["name"]: p["version"] for p in packages if "version" in p}
-    assert all(coordinates[name] == version for name, version in expected.items())
+    assert all(Version(coordinates[name]) >= Version(version) for name, version in minimum.items())
+    expected = {name: coordinates[name] for name in minimum}
     for bundle in ("core", "cloud", "deep-learning", "dev"):
         content = (ROOT / "locks" / (bundle + ".lock")).read_text()
         assert all(f"{name}=={version} \\\n    --hash=sha256:" in content for name, version in expected.items())
@@ -71,10 +73,10 @@ def test_native_probe_refuses_changed_repair_bytes_before_loading(tmp_path, monk
         native.probe()
 
 
-def test_unqualified_windows_native_path_cannot_report_acceptance(monkeypatch):
+def test_unqualified_windows_arm_native_path_cannot_report_acceptance(monkeypatch):
     native = script("pillow_native")
     monkeypatch.setattr(native.platform, "system", lambda: "Windows")
-    monkeypatch.setattr(native.platform, "machine", lambda: "AMD64")
+    monkeypatch.setattr(native.platform, "machine", lambda: "ARM64")
     with pytest.raises(RuntimeError, match="qualification unavailable"):
         native.policy()
 

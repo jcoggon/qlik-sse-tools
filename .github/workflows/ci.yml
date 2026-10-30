@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: "17 4 * * 1"
 
+concurrency:
+  group: ci-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     strategy:
@@ -23,11 +27,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install fixed Linux CI prerequisites
         if: runner.os == 'Linux'
         run: bash .github/scripts/linux-prerequisites.sh
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         if: runner.os != 'Linux'
         with:
           python-version: "3.13"
@@ -43,7 +47,7 @@ jobs:
       - run: python tests/test_all_tools.py
       - run: python -m pytest tests/test_registry.py tests/test_version.py tests/test_server_integration.py tests/test_llm_responses.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py
       - run: python -m pytest tests/test_security.py tests/test_supply_chain.py
-      - run: python -m ruff check core/_security.py scripts/provision.py scripts/export_locks.py scripts/pillow_native.py tests/test_security.py tests/test_keras_security.py tests/test_supply_chain.py
+      - run: python -m ruff check core/_security.py scripts/provision.py scripts/export_locks.py scripts/pillow_native.py scripts/pillow_windows.py tests/test_security.py tests/test_keras_security.py tests/test_supply_chain.py
       - run: python -m ruff check core/_llm.py core/_statsforecast.py core/cloud_api.py tests/test_llm_responses.py tests/test_statsforecast_extensions.py tests/test_cloud_api.py tests/test_server_integration.py
       - run: python -m ruff check --select F core/__main__.py core/_utils.py
       - run: python -m compileall -q core generated tests scripts
@@ -53,10 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     container: python:3.13.18-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "0.10.12"
+          version: "0.13.6"
       - run: uv run --no-project --python 3.13 scripts/export_locks.py --check
 
   native-security:
@@ -67,14 +71,15 @@ jobs:
           - os: ubuntu-latest
             image: python:3.13.18-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f
           - os: macos-latest
+          - os: windows-latest
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install fixed Linux CI prerequisites
         if: runner.os == 'Linux'
         run: bash .github/scripts/linux-prerequisites.sh
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         if: runner.os != 'Linux'
         with:
           python-version: "3.13"
@@ -82,7 +87,7 @@ jobs:
         shell: bash
         run: |
           python -m venv .ci-env
-          python -c 'import os, pathlib; p = pathlib.Path(".ci-env/bin").resolve(); open(os.environ["GITHUB_PATH"], "a").write(str(p) + "\n")'
+          python -c 'import os, pathlib; p = pathlib.Path(".ci-env/Scripts" if os.name == "nt" else ".ci-env/bin").resolve(); open(os.environ["GITHUB_PATH"], "a").write(str(p) + "\n")'
       - run: >-
           python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
       - run: >-
@@ -95,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     container: python:3.13.18-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: bash .github/scripts/linux-prerequisites.sh
       - run: >-
           python -m pip install --require-hashes --only-binary=:all: -r locks/bootstrap.lock
@@ -107,8 +112,8 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
       - run: >-
@@ -119,12 +124,18 @@ jobs:
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/cloud.lock
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/deep-learning.lock
       - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/dev.lock
+      - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/notebooks.lock
+      - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/visualization.lock
+      - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/transformers.lock
+      - run: python -m pip_audit --strict --no-deps --disable-pip -r locks/bootstrap.lock
 
   python-314-compatibility-probe:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
       - run: uv pip compile --python 3.14 requirements.txt -o /tmp/qlik-py-tools-314.txt

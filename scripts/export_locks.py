@@ -7,7 +7,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BUNDLES = {"core": [], "cloud": ["cloud"], "deep-learning": ["deep-learning"], "dev": ["dev", "cloud"]}
+BUNDLES = {"core": [], "cloud": ["cloud"], "deep-learning": ["deep-learning"], "dev": ["dev", "cloud"], "notebooks": ["notebooks"], "visualization": ["visualization"], "transformers": ["transformers"]}
 
 
 def main():

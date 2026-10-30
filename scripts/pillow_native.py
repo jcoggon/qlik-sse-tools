@@ -26,6 +26,10 @@ SOURCE_COMMIT = "db24a98aed38a16de78cc05ca15cdd8dc2a0d92d"
 SOURCE_SHA256 = "113b9685dfc14dd2f3360d077283266eec2fbdfb0fe3e5600f11be151da0d68e"
 SOURCE_URL = f"https://github.com/google/brotli/archive/{SOURCE_COMMIT}.tar.gz"
 POLICIES = {
+    ("Windows", "AMD64"): {
+        "root": "PIL",
+        "files": {"_imagingft.cp313-win_amd64.pyd": ("_imagingft.cp313-win_amd64.pyd", "91f0a8e145163803637620517bad32ad5cb551d8a4dc02c3309811af24dbcbcc")},
+    },
     ("Linux", "x86_64"): {
         "root": "pillow.libs",
         "files": {
@@ -65,7 +69,7 @@ def policy():
         raise RuntimeError("Pillow library custody differs")
     if sys.prefix == sys.base_prefix or not root.is_relative_to(Path(sys.prefix).resolve()):
         raise RuntimeError("Native qualification requires Pillow inside the target virtual environment")
-    if set(p.name for p in root.glob("*brotli*")) != set(selected["files"]):
+    if platform.system() != "Windows" and set(p.name for p in root.glob("*brotli*")) != set(selected["files"]):
         raise RuntimeError("Unreviewed Pillow Brotli library set")
     if any((root / name).is_symlink() for name in selected["files"]):
         raise RuntimeError("Pillow Brotli libraries cannot be symlinks")
@@ -88,18 +92,25 @@ def probe():
         encoded = base64.urlsafe_b64encode(bytes.fromhex(expected)).rstrip(b"=").decode()
         if record[1:] != ["sha256=" + encoded, str(path.stat().st_size)]:
             raise RuntimeError("Installed RECORD does not describe the repaired library")
-    decoder = next(root / name for name in selected["files"] if "brotlidec" in name)
+    windows = platform.system() == "Windows"
+    if windows:
+        manifest = Path(__file__).with_name("windows-native-inputs.json")
+        if receipt.get("input_manifest_sha256") != digest(manifest):
+            raise RuntimeError("Windows native input provenance differs")
+    decoder = next(root / name for name in selected["files"] if windows or "brotlidec" in name)
     lib = ctypes.CDLL(str(decoder))
-    lib.BrotliDecoderVersion.restype = ctypes.c_uint32
-    if lib.BrotliDecoderVersion() != 0x1002001:
+    version = getattr(lib, "QlikBrotliDecoderVersion" if windows else "BrotliDecoderVersion")
+    version.restype = ctypes.c_uint32
+    if version() != 0x1002001:
         raise RuntimeError("Pillow Brotli decoder is not 1.2.1")
     compressed = bytes.fromhex("0b0a80526170746f7220736563757269747920736d6f6b6503")
     encoded = ctypes.create_string_buffer(compressed)
     decoded = ctypes.create_string_buffer(64)
     length = ctypes.c_size_t(len(decoded))
-    lib.BrotliDecoderDecompress.argtypes = [ctypes.c_size_t, ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t), ctypes.c_void_p]
-    lib.BrotliDecoderDecompress.restype = ctypes.c_int
-    if lib.BrotliDecoderDecompress(len(compressed), encoded, ctypes.byref(length), decoded) != 1 or decoded.raw[:length.value] != b"Raptor security smoke":
+    decompress = getattr(lib, "QlikBrotliDecoderDecompress" if windows else "BrotliDecoderDecompress")
+    decompress.argtypes = [ctypes.c_size_t, ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t), ctypes.c_void_p]
+    decompress.restype = ctypes.c_int
+    if decompress(len(compressed), encoded, ctypes.byref(length), decoded) != 1 or decoded.raw[:length.value] != b"Raptor security smoke":
         raise RuntimeError("Brotli bounded round trip failed")
     from PIL import Image, ImageFont, features
     for feature in ("freetype2", "littlecms2", "webp", "avif", "jpg", "jpg_2000", "zlib", "libtiff"):
@@ -115,6 +126,12 @@ def probe():
                 raise RuntimeError("Pillow image round trip failed")
     if ImageFont.load_default().getbbox("Raptor")[2] <= 0:
         raise RuntimeError("Pillow FreeType smoke failed")
+    if windows:
+        fixture = root / "raptor-native-smoke.woff2"
+        if digest(fixture) != receipt.get("font_fixture_sha256"):
+            raise RuntimeError("Windows native WOFF2 fixture differs")
+        if ImageFont.truetype(str(fixture), 16).getbbox("Raptor")[2] <= 0:
+            raise RuntimeError("Windows FreeType WOFF2 decoding failed")
     print(json.dumps(receipt, sort_keys=True))
 
 
@@ -124,6 +141,11 @@ def run(*command):
 
 def repair():
     package, root, selected = policy()
+    if platform.system() == "Windows":
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from pillow_windows import repair as repair_windows
+        repair_windows(package)
+        return
     receipt_path = root / "raptor-native-security.json"
     if receipt_path.exists():
         run(sys.executable, __file__, "--probe")

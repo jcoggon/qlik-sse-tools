@@ -1,10 +1,11 @@
 # Reviewed provisioning/build tools; not imported by the SSE.
 pip==26.2.2
-packaging==26.2
+packaging==26.3
 setuptools==84.2.1
-wheel==0.47.0
-cython==3.2.8
-pybind11==3.0.2
-numpy==2.4.2
+wheel==0.48.0
+cython==3.3.0
+pybind11==3.1.0
+numpy==2.5.4
 cmake==4.4.4
 patchelf==0.19.1.0 ; sys_platform == 'linux'
+uv==0.13.6
