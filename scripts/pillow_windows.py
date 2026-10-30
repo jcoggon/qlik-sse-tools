@@ -107,6 +107,13 @@ def build(work, inputs):
     selected = ["zlib", "libpng", "brotli", "freetype", "harfbuzz"]
     module.DEPS = {name: module.DEPS[name] for name in selected}
     module.DEPS["brotli"]["dir"] = "brotli-db24a98aed38a16de78cc05ca15cdd8dc2a0d92d"
+    # zlib-ng enables tests that download GoogleTest by default. Build only the
+    # required library and forbid CMake FetchContent for all selected sources.
+    for name in selected:
+        module.DEPS[name]["build"] = [
+            line + " -DFETCHCONTENT_FULLY_DISCONNECTED=ON" + (" -DBUILD_TESTING=OFF" if name == "zlib" else "")
+            if " -S ." in line else line for line in module.DEPS[name]["build"]
+        ]
     # All downloads are already hash-verified. Forbid the recipe's live fallback.
     def no_download(*_):
         raise RuntimeError("Unexpected ungoverned native dependency download")
