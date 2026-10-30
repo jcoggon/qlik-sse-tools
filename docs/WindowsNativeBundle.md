@@ -49,6 +49,18 @@ Prior native CI used a cached older Windows 3.13 interpreter: those results prov
 ABI/native behavior, not Windows 3.13.18 execution. New CI explicitly qualifies
 both producer and consumer on the exact maintained supplier.
 
+## Complete-source boundary
+
+Approval, application and later native verification require the complete clean
+canonical checkout at the qualified consumer commit, including the reviewed
+workflow, tests, lock files and installation helpers in `source_files()`. The
+standalone source ZIP and Gateway's pruned runtime companion do not contain that
+complete checkout and cannot independently perform this contract. Retain the
+pinned full checkout in operator-controlled storage for these operations. Gateway
+may quarantine producer/bootstrap/approval tools from its runtime companion; no
+missing-file exception or relaxed source check is added to fit that companion.
+Gateway's owner controls its separate member policy and candidate provisioning.
+
 ## Independent operator approval
 
 Use an existing authenticated `gh` session on the source/review host. Download the
