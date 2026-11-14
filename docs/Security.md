@@ -37,6 +37,27 @@ complete exported bundle. Auditing with `--no-deps --disable-pip` uses the compl
 resolved inputs without creating a second resolver environment; it does not
 ignore advisories. Native components require separate checks.
 
+## Optional notebook security baseline
+
+The notebook inputs explicitly pin Soup Sieve **4.0.0** (published as `4.0`)
+and Tornado **6.6.1**, with matching versions and hashes in `uv.lock`,
+`locks/notebooks.lock` and `locks/constraints.txt`. These remain optional and
+are absent from the core bundle. BeautifulSoup's `soupsieve>=1.6.1` range and
+the locked Jupyter packages' Tornado minimums permit these versions.
+
+Soup Sieve fixes [descendant-selector complexity](https://github.com/facelessuser/soupsieve/security/advisories/GHSA-mmhr-3c5m-f64f).
+Keep its default caching enabled; the temporary `NOCACHE` fallback retains the
+affected behavior. Tornado fixes [redirect substitutions with three or more leading slashes](https://github.com/tornadoweb/tornado/security/advisories/GHSA-5cjw-f85j-cv6r).
+Run `python tests/test_notebook_security.py` in the frozen notebook environment
+for bounded selector/DOM checks, notebook HTML export, imports and loopback-only
+redirect checks with redirect following disabled. No kernel or remote service
+is started. CI runs these checks in its Windows optional-extras job.
+
+These source and test-environment fixes do not establish that any independent
+installation has the optional notebook bundle, accepts untrusted markup, uses
+the affected redirect handler, or has been upgraded. Gateway's imported source
+and frozen bundles require their own governed adoption and installed acceptance.
+
 ## Pillow's independent Brotli decoder
 
 Pillow **13.0.0 alone is insufficient**. Its reviewed CPython 3.13 Linux AMD64
