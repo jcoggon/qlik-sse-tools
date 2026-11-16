@@ -1,3 +1,6 @@
 jupyterlab==4.6.5
 notebook==7.6.4
 ipykernel==7.4.0
+# Security pins for the optional Jupyter/nbconvert dependency graph.
+soupsieve==4.0.0
+tornado==6.6.1
