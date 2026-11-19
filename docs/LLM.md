@@ -125,7 +125,7 @@ A full model name may be passed with `model=<name>` when an alias is not enough.
 | Argument | Default | Notes |
 | --- | --- | --- |
 | `system_prompt` | none | System/developer instruction for the model |
-| `temperature` | Provider default for Responses/Claude | Available on models that support sampling controls |
+| `temperature` | Provider default for Responses and direct Claude. Legacy Azure defaults to `0.7`. | Available on models that support sampling controls |
 | `max_tokens` | `2048` | API output-token limit or CLI prompt hint |
 | `model` | `sonnet` for Claude | Claude only |
 | `debug` | `false` | Writes request and response logs |

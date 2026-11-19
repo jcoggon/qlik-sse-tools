@@ -79,7 +79,7 @@ Known single-page URLs use Scrape JSON mode. Semicolon-separated URLs use Agent 
 <AAI>.Firecrawl_Agent(
   'https://example.com',
   'Find product names, sizes, and prices. Return JSON only.',
-  'model=spark-1-mini|max_credits=100'
+  'model=spark-2|max_credits=100'
 )
 ```
 

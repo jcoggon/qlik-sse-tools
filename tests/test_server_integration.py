@@ -91,7 +91,7 @@ def test_diagnostics_command_reports_runtime_state():
     )
     payload = json.loads(result.stdout.strip().splitlines()[-1])
     assert payload["status"] == "ok"
-    assert payload["version"] == "3.1.0"
+    assert payload["version"] == "3.2.0"
     assert payload["function_count"] >= 59
     assert all(payload["modules"].values())
     assert payload["host"] == "127.0.0.1"
@@ -123,7 +123,7 @@ def test_grpc_health_capabilities_and_function_execution():
         stub = SSE_grpc.ConnectorStub(channel)
         capabilities = stub.GetCapabilities(SSE.Empty(), timeout=5)
         assert capabilities.pluginIdentifier == "Qlik Python Tools"
-        assert capabilities.pluginVersion == "v3.1.0"
+        assert capabilities.pluginVersion == "v3.2.0"
         assert len(capabilities.functions) >= 59
 
         function_header = SSE.FunctionRequestHeader(functionId=4, version="1")

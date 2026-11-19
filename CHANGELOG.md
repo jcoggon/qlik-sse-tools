@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 3.2.0 - 2026-11-19
+
+- Add an opt-in Codex CLI backend for `LLM_Response` and `LLM_Response_Bulk`. Use the SSE service identity's signed-in profile with bounded calls and stateless structured output.
+- Add direct OpenAI and Anthropic endpoints, a Claude CLI pilot, and Gemini and Ollama Responses backends. Keep the existing Azure defaults.
+- Migrate Firecrawl URL extraction to Scrape JSON mode and Agent. Known single-page requests use Scrape, while discovery and multi-page extraction use Agent with a credit cap.
 
 - Default the gRPC listener to IPv4 loopback and add validated `--host`/`QLIK_SSE_HOST` selection for plaintext and mutual-TLS modes. Existing remote clients must explicitly select their interface/wildcard and retain TLS configuration. Start wrappers forward these options; startup/diagnostics show the selected address.
 
