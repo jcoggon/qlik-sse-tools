@@ -608,6 +608,8 @@ LOAD * EXTENSION <AAI>.Get_Features_Expression(Params{model_name});
 
 Send prompts to Azure OpenAI GPT models and get responses back in Qlik.
 
+See [LLM Integrations](docs/LLM.md) for direct OpenAI and Anthropic APIs, the shared Codex CLI pilot behind `LLM_Response`, and the Gemini and Ollama backends.
+
 ### LLM_Chat (ID: 46) — Scalar (Chart Expression)
 
 Send a prompt per row, get a response string.
@@ -964,7 +966,8 @@ EXTENSION <AAI>.Firecrawl_Agent_Bulk(AgentTasks{key, source, prompt, kwargs});
 | `pdf_mode` | `auto` | Scrape, Extract | PDF parsing: `auto`, `fast` (text-only), `ocr` (force OCR) |
 | `pdf_max_pages` | *(all)* | Scrape, Extract | Maximum PDF pages to process |
 | `enable_web_search` | `false` | Extract | Allow Firecrawl to follow links outside the domain |
-| `schema` | *(none)* | Extract | JSON schema string for structured output |
+| `schema_b64` | *(none)* | Extract / Agent | Base64url-encoded JSON Schema for structured output |
+| `schema` | *(none)* | Extract / Agent | Legacy inline JSON Schema for values without delimiters |
 | `llm_provider` | `openai` | Extract (local) | LLM for local file extraction: `openai`, `claude` |
 | `max_content_chars` | `50000` | Extract (local) | Max characters sent to LLM |
 | `limit` | *(default)* | Search | Maximum number of search results |

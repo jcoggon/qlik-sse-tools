@@ -1,4 +1,6 @@
+import base64
 import os
+import re
 import sys
 import json
 import time
@@ -10,6 +12,7 @@ import pandas as pd
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
+import _llm_backends as backends
 import _utils as utils
 import ServerSideExtension_pb2 as SSE
 
@@ -35,19 +38,6 @@ try:
     _HAS_OPENPYXL = True
 except ImportError:
     _HAS_OPENPYXL = False
-
-# LLM providers for local file extraction
-_LLM_PROVIDERS = {
-    'openai': 'openai',
-    'claude': 'claude',
-}
-
-
-def Firecrawl(**kwargs):
-    from firecrawl import Firecrawl as client
-    return client(**kwargs)
-
-
 
 class FirecrawlForQlik:
     """
@@ -76,6 +66,8 @@ class FirecrawlForQlik:
         # Initialize the Firecrawl client from environment variable
         api_key = os.environ.get("FIRECRAWL_API_KEY")
         if api_key:
+            from firecrawl import Firecrawl
+
             self.client = Firecrawl(api_key=api_key)
         else:
             self.client = None
@@ -187,7 +179,7 @@ class FirecrawlForQlik:
             prompt = self.request_df.loc[i, 'prompt']
 
             try:
-                if self._is_url(source):
+                if self._is_url(source) or (not source.strip() and self.enable_web_search):
                     extracted = self._extract_from_url(source, prompt)
                 else:
                     extracted = self._extract_from_local(source, prompt)
@@ -406,70 +398,52 @@ class FirecrawlForQlik:
         else:
             return str(result)
 
-    def _extract_from_url(self, url, prompt):
-        """
-        Extract structured data from a remote URL using Firecrawl.
-        Strategy: First try scrape with JSON format (faster, works on single URLs).
-        Falls back to the Extract API if scrape doesn't return JSON data.
-        """
-
+    def _extract_from_url(self, source, prompt):
+        """Use Scrape JSON mode for one page, or Agent for web and multi-page extraction."""
         if not self.client:
             raise RuntimeError("Firecrawl API key not configured. Set FIRECRAWL_API_KEY in .env")
 
-        # Strategy 1: Scrape with JSON format extraction (best for single URLs)
-        scrape_kwargs = {
-            'formats': [{'type': 'json', 'prompt': prompt}],
-        }
-
-        if self.schema:
-            scrape_kwargs['formats'] = [{'type': 'json', 'prompt': prompt, 'schema': self.schema}]
-
-        # Add PDF parser options if specified
-        if self.pdf_mode or self.pdf_max_pages:
-            parser = {"type": "pdf"}
-            if self.pdf_mode:
-                parser["mode"] = self.pdf_mode
-            if self.pdf_max_pages:
-                parser["max_pages"] = self.pdf_max_pages
-            scrape_kwargs['parsers'] = [parser]
-
-        try:
-            result = self.client.scrape(url, **scrape_kwargs)
-
-            # Check for JSON data in the response
-            json_data = None
-            if hasattr(result, 'json'):
-                json_data = result.json
-            elif isinstance(result, dict) and 'json' in result:
-                json_data = result['json']
-
-            if json_data and json_data != {} and json_data != []:
-                return json.dumps(json_data, ensure_ascii=False, default=str)
-        except Exception:
-            pass  # Fall through to Extract API
-
-        # Strategy 2: Extract API (async, better for multi-URL or complex extraction)
-        extract_kwargs = {
-            'urls': [url],
-            'prompt': prompt,
-        }
-
-        if self.schema:
-            extract_kwargs['schema'] = self.schema
-
-        if self.enable_web_search:
-            extract_kwargs['enable_web_search'] = True
-
-        result = self.client.extract(**extract_kwargs)
-
-        # Return the extracted data as JSON string
-        if hasattr(result, 'data'):
-            return json.dumps(result.data, ensure_ascii=False, default=str)
-        elif isinstance(result, dict):
-            data = result.get('data', result)
-            return json.dumps(data, ensure_ascii=False, default=str)
+        urls = [url.strip() for url in re.split(r";\s*(?=https?://)", source, flags=re.I) if url.strip()]
+        wildcard = any(url.endswith("/*") for url in urls)
+        if self.enable_web_search or wildcard or len(urls) != 1:
+            credit_limit = int(os.environ.get("FIRECRAWL_EXTRACT_MAX_CREDITS", "100"))
+            max_credits = self.max_credits if self.max_credits is not None else credit_limit
+            if not 1 <= max_credits <= credit_limit:
+                raise ValueError(f"max_credits must be between 1 and {credit_limit} for extraction.")
+            options = {"prompt": prompt, "max_credits": max_credits, "timeout": 120}
+            if urls:
+                options["urls"] = [url.removesuffix("/*") for url in urls]
+            if not self.enable_web_search and not wildcard:
+                options["strict_constrain_to_urls"] = True
+            if self.schema is not None:
+                options["schema"] = self.schema
+            if self.agent_model:
+                options["model"] = self.agent_model
+            result = self._normalize_result(self.client.agent(**options))
+            data = result.get("data")
+            if data is None or result.get("status") not in {None, "completed"} or result.get("success") is False:
+                raise RuntimeError("Firecrawl Agent did not complete extraction.")
         else:
-            return str(result)
+            json_format = {"type": "json", "prompt": prompt}
+            if self.schema is not None:
+                json_format["schema"] = self.schema
+            options = {"formats": [json_format]}
+            if self.timeout is not None:
+                options["timeout"] = self.timeout
+            if self.only_main_content is not None:
+                options["only_main_content"] = self.only_main_content
+            if self.pdf_mode or self.pdf_max_pages:
+                parser = {"type": "pdf"}
+                if self.pdf_mode:
+                    parser["mode"] = self.pdf_mode
+                if self.pdf_max_pages:
+                    parser["max_pages"] = self.pdf_max_pages
+                options["parsers"] = [parser]
+            result = self.client.scrape(urls[0], **options)
+            data = result.get("json") if isinstance(result, dict) else result.json
+            if data is None:
+                raise RuntimeError("Firecrawl Scrape did not return extracted JSON.")
+        return json.dumps(data, ensure_ascii=False, default=str)
 
     def _search_web(self, query):
         """
@@ -813,57 +787,22 @@ class FirecrawlForQlik:
             return self._call_openai_for_extraction(system_prompt, user_prompt)
 
     def _call_openai_for_extraction(self, system_prompt, user_prompt):
-        """
-        Use Azure OpenAI to extract structured data from content.
-        """
-        from openai import AzureOpenAI
-
-        client = AzureOpenAI(
-            api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
-            api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2025-11-01-preview"),
-            azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-        )
-        deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
-
-        response = client.chat.completions.create(
-            model=deployment,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.1,
-            max_completion_tokens=4096,
-        )
-
-        return response.choices[0].message.content
+        backend = os.environ.get("QLIK_LLM_CHAT_BACKEND", "azure_openai").strip().lower()
+        model = backends.openai_model(backend)
+        with backends.openai_client(backend) as client:
+            return backends.api_response(client, model, backends.Generation(
+                user_prompt, instructions=system_prompt, max_tokens=4096, schema=self.schema,
+            ))[0]
 
     def _call_claude_for_extraction(self, system_prompt, user_prompt):
-        """
-        Use Azure AI Foundry Claude to extract structured data from content.
-        """
-        import anthropic
-
-        client = anthropic.Anthropic(
-            api_key=os.environ.get("AZURE_FOUNDRY_API_KEY"),
-            base_url=os.environ.get("AZURE_FOUNDRY_CLAUDE_API_ENDPOINT"),
-            default_headers={"anthropic-version": "2023-06-01"},
-        )
-        api_version = os.environ.get("AZURE_FOUNDRY_API_VERSION", "2024-05-01-preview")
-        model = os.environ.get("AZURE_CLAUDE_SONNET", "claude-sonnet-4-5")
-
-        response = client.messages.create(
-            model=model,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-            max_tokens=4096,
-            extra_body={"temperature": 0.1},
-            extra_headers={"api-version": api_version},
-        )
-
-        text = "".join(block.text for block in response.content if block.type == "text")
-        if not text:
-            raise RuntimeError("Claude returned no text content")
-        return text
+        backend = backends.claude_backend()
+        if backend == "claude_cli":
+            raise RuntimeError("Local document extraction with Claude requires an API backend.")
+        model = backends.claude_model(backend)
+        with backends.claude_client(backend) as client:
+            return backends.claude_api_text(client, backend, model, backends.Generation(
+                user_prompt, instructions=system_prompt, max_tokens=4096, temperature=0.1,
+            ))
 
     # =========================================================================
     # Parameter handling
@@ -907,7 +846,13 @@ class FirecrawlForQlik:
         # Extract parameters
         self.schema = None
         schema_str = self.kwargs.pop('schema', None)
-        if schema_str:
+        schema_b64 = self.kwargs.pop('schema_b64', None)
+        if schema_b64:
+            padding = '=' * (-len(schema_b64) % 4)
+            self.schema = json.loads(base64.urlsafe_b64decode(schema_b64 + padding))
+            if not isinstance(self.schema, dict):
+                raise ValueError('schema_b64 must contain a JSON Schema object.')
+        elif schema_str:
             try:
                 self.schema = json.loads(schema_str)
             except json.JSONDecodeError:

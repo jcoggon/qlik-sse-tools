@@ -10,15 +10,19 @@ from typing import Any, Literal
 import numpy as np
 import pandas as pd
 from fastapi import Depends, FastAPI, Header, HTTPException, status
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from dotenv import load_dotenv
 from statsforecast import StatsForecast
 
 try:
+    from . import _llm_backends as backends
+    from ._llm_cli import LLMError
     from ._statsforecast import MODEL_MAP, build_statsforecast_model
     from ._version import __version__
 except ImportError:  # Support the launch scripts' top-level module mode.
+    import _llm_backends as backends
+    from _llm_cli import LLMError
     from _statsforecast import MODEL_MAP, build_statsforecast_model
     from _version import __version__
 
@@ -164,13 +168,14 @@ def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def _responses_client() -> OpenAI:
-    base_url = os.environ.get("AZURE_OPENAI_RESPONSES_BASE_URL")
-    if not base_url:
-        endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
-        base_url = f"{endpoint}/openai/v1/" if endpoint else None
-    if not base_url or not os.environ.get("AZURE_OPENAI_API_KEY"):
-        raise HTTPException(status_code=503, detail="Azure/OpenAI Responses API is not configured")
-    return OpenAI(api_key=os.environ["AZURE_OPENAI_API_KEY"], base_url=base_url)
+    try:
+        return backends.openai_client(_responses_backend())
+    except LLMError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
+
+
+def _responses_backend() -> str:
+    return os.environ.get("QLIK_CLOUD_RESPONSES_BACKEND", "azure_openai").strip().lower()
 
 
 @app.get("/healthz")
@@ -227,28 +232,21 @@ def correlation(request: CorrelationRequest):
 @app.post("/v1/responses", dependencies=[Depends(require_api_key)])
 def responses(request: ResponsesRequest):
     client = _responses_client()
-    model = request.model or os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+    try:
+        model = request.model or backends.openai_model(_responses_backend())
+    except LLMError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
     results = []
     for prompt in request.prompts:
-        kwargs: dict[str, Any] = {
-            "model": model,
-            "input": prompt,
-            "max_output_tokens": request.max_output_tokens,
-            "store": request.store,
-        }
-        if request.instructions:
-            kwargs["instructions"] = request.instructions
-        if request.previous_response_id:
-            kwargs["previous_response_id"] = request.previous_response_id
-        if request.json_schema:
-            kwargs["text"] = {
-                "format": {
-                    "type": "json_schema",
-                    "name": request.json_schema_name,
-                    "schema": request.json_schema,
-                    "strict": True,
-                }
-            }
-        response = client.responses.create(**kwargs)
-        results.append({"prompt": prompt, "response": response.output_text, "response_id": response.id})
+        try:
+            text, response_id = backends.api_response(client, model, backends.Generation(
+                prompt, instructions=request.instructions, max_tokens=request.max_output_tokens,
+                store=request.store, previous_response_id=request.previous_response_id,
+                schema=request.json_schema, schema_name=request.json_schema_name,
+            ))
+        except LLMError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from None
+        except OpenAIError:
+            raise HTTPException(status_code=502, detail="Responses API request failed") from None
+        results.append({"prompt": prompt, "response": text, "response_id": response_id})
     return {"model": model, "rows": results}

@@ -53,7 +53,7 @@ def _start_server(port, *, args=(), connect_host="127.0.0.1", credentials=None, 
     target = f"[{connect_host}]:{port}" if ":" in connect_host else f"{connect_host}:{port}"
     channel = grpc.secure_channel(target, credentials) if credentials else grpc.insecure_channel(target)
     try:
-        grpc.channel_ready_future(channel).result(timeout=30)
+        grpc.channel_ready_future(channel).result(timeout=60)
     except Exception:
         channel.close()
         process.terminate()

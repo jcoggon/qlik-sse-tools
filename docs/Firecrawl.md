@@ -51,6 +51,8 @@ Supported local file types:
 
 ## Extract Examples
 
+Known single-page URLs use Scrape JSON mode. Semicolon-separated URLs use Agent constrained to those URLs. A trailing `/*` or `enable_web_search=true` uses Agent with discovery enabled. `FIRECRAWL_EXTRACT_MAX_CREDITS` caps Agent extraction at 100 credits by default. The `max_credits` kwarg can lower this cap for a request. Single-page Scrape errors are returned to Qlik as extraction errors.
+
 ```qlik
 <AAI>.Firecrawl_Extract(
   'https://example.com/products',
@@ -63,7 +65,7 @@ Supported local file types:
 <AAI>.Firecrawl_Extract(
   'C:\Data\catalogue.pdf',
   'Extract every tyre product and price as JSON.',
-  'llm_provider=openai|schema={"type":"object"}'
+  'llm_provider=openai'
 )
 ```
 
@@ -90,15 +92,16 @@ Supported local file types:
 | `timeout` | scrape/extract/search/agent | Timeout value where supported |
 | `pdf_mode` | local PDF / remote PDF | OCR or parser mode where supported |
 | `pdf_max_pages` | local PDF | Limit pages parsed |
-| `schema` | extract/agent | JSON schema string for structured extraction |
+| `schema_b64` | extract/agent | Base64url-encoded JSON Schema, including schemas with commas |
+| `schema` | extract/agent | Legacy inline JSON Schema for values without delimiters |
 | `enable_web_search` | extract | Allow web search during extraction |
 | `llm_provider` | local extract | LLM provider for local extraction |
 | `limit` | search | Number of search results |
 | `location` | search | Search location hint |
 | `tbs` | search | Search time filter |
 | `scrape_content` | search | Include scraped page content in search result |
-| `model` | agent | Firecrawl Agent model |
-| `max_credits` | agent | Credit budget |
+| `model` | agent and Agent-backed extract | Firecrawl Agent model |
+| `max_credits` | agent and Agent-backed extract | Credit budget |
 | `debug` | all | Writes detailed logs |
 
 ## Agent Notes
