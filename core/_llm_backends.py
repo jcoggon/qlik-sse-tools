@@ -117,6 +117,7 @@ def claude_client(backend: str):
         return anthropic.AnthropicFoundry(
             api_key=_required("AZURE_FOUNDRY_API_KEY"),
             base_url=_required("AZURE_FOUNDRY_CLAUDE_API_ENDPOINT"),
+            default_headers={"anthropic-version": "2023-06-01"},
             timeout=60, max_retries=1,
         )
     raise LLMError("QLIK_LLM_CLAUDE_BACKEND must be foundry, anthropic or claude_cli.")

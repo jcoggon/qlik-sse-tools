@@ -62,6 +62,7 @@ class FirecrawlForQlik:
         self.context = context
         self.logfile = None
         self.debug = False
+        self.schema = None
 
         # Initialize the Firecrawl client from environment variable
         api_key = os.environ.get("FIRECRAWL_API_KEY")
