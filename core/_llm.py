@@ -10,32 +10,14 @@ import pandas as pd
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
+import _llm_backends as backends
+from _llm_cli import LLMError, cli_row_limit, cli_text
 import _utils as utils
 import ServerSideExtension_pb2 as SSE
 
 # Add Generated folder to module path
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(PARENT_DIR, 'generated'))
-
-# Map of short model names to environment variable keys for Claude models
-CLAUDE_MODELS = {
-    'haiku': 'AZURE_CLAUDE_HAIKU',
-    'opus': 'AZURE_CLAUDE_OPUS',
-    'sonnet': 'AZURE_CLAUDE_SONNET',
-}
-
-# SDK clients load only when a Qlik LLM function is called. The generated SDK
-# modules are large; importing them during analytics-only SSE startup adds delay.
-def AzureOpenAI(**kwargs):
-    from openai import AzureOpenAI as client
-    return client(**kwargs)
-
-
-def OpenAI(**kwargs):
-    from openai import OpenAI as client
-    return client(**kwargs)
-
-
 
 class LLMForQlik:
     """
@@ -60,25 +42,9 @@ class LLMForQlik:
         self.logfile = None
         self.debug = False
 
-        # Initialize the Azure OpenAI client from environment variables
-        self.client = AzureOpenAI(
-            api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
-            api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2025-11-01-preview"),
-            azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-        )
-        self.deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
-
-        # The Responses API uses Azure's OpenAI-compatible v1 endpoint. Keep a
-        # separate client so the existing Chat Completions functions remain
-        # backward compatible with AzureOpenAI and api-version deployments.
-        responses_base_url = os.environ.get("AZURE_OPENAI_RESPONSES_BASE_URL")
-        if not responses_base_url:
-            endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
-            responses_base_url = f"{endpoint}/openai/v1/" if endpoint else None
-        self.responses_client = OpenAI(
-            api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
-            base_url=responses_base_url,
-        )
+        self.client = None
+        self.deployment = None
+        self.backend = os.environ.get("QLIK_LLM_CHAT_BACKEND", "azure_openai").strip().lower()
 
     def chat(self, load_script=False):
         """
@@ -103,9 +69,7 @@ class LLMForQlik:
         self.request_df = utils.request_df(self.request, row_template, col_headers)
 
         # Get the argument strings from the request dataframe
-        if 'kwargs' in self.request_df.columns:
-            kwargs = self.request_df.loc[0, 'kwargs']
-            self._set_params(kwargs)
+        self._set_params('' if self.request_df.empty else self.request_df['kwargs'].iloc[0])
 
         # Print the request dataframe to the logs
         if self.debug:
@@ -156,17 +120,18 @@ class LLMForQlik:
 
         messages.append({"role": "user", "content": prompt})
 
+        if self.client is None:
+            self.deployment = backends.openai_model(self.backend)
+            self.client = backends.openai_client(self.backend, responses=False)
+        options = {"temperature": self.temperature} if self.temperature_explicit or self.backend == "azure_openai" else {}
         response = self.client.chat.completions.create(
-            model=self.deployment,
-            messages=messages,
-            temperature=self.temperature,
-            max_completion_tokens=self.max_tokens,
+            model=self.deployment, messages=messages, max_completion_tokens=self.max_tokens, **options,
         )
 
         return response.choices[0].message.content
 
     def response(self, load_script=False):
-        """Call the Azure/OpenAI Responses API, optionally with strict JSON output."""
+        """Run a one-shot text or structured response through the configured backend."""
         if load_script:
             row_template = ['strData', 'strData', 'strData']
             col_headers = ['key', 'prompt', 'kwargs']
@@ -175,13 +140,16 @@ class LLMForQlik:
             col_headers = ['prompt', 'kwargs']
 
         self.request_df = utils.request_df(self.request, row_template, col_headers)
-        kwargs = self.request_df.loc[0, 'kwargs'] if 'kwargs' in self.request_df.columns else ''
-        self._set_params(kwargs)
+        self.backend = backends.responses_backend()
+        self._set_params('' if self.request_df.empty else self.request_df['kwargs'].iloc[0])
+        cli_limit = cli_row_limit() if self.backend == "codex_cli" else None
 
         responses = []
         for i in self.request_df.index:
             prompt = self.request_df.loc[i, 'prompt']
             try:
+                if cli_limit is not None and len(self.request_df) > cli_limit:
+                    raise LLMError(f"Codex CLI accepts at most {cli_limit} rows per SSE call.")
                 response_text = self._call_response(prompt)
             except Exception as e:
                 response_text = "Error: {}".format(str(e))
@@ -201,30 +169,31 @@ class LLMForQlik:
         return self.response_df
 
     def _call_response(self, prompt):
-        api_kwargs = {
-            "model": self.deployment,
-            "input": prompt,
-            "max_output_tokens": self.max_tokens,
-            "store": self.store,
-        }
-        if self.system_prompt:
-            api_kwargs["instructions"] = self.system_prompt
-        if self.previous_response_id:
-            api_kwargs["previous_response_id"] = self.previous_response_id
-        if self.temperature_explicit:
-            api_kwargs["temperature"] = self.temperature
-        if self.json_schema:
-            api_kwargs["text"] = {
-                "format": {
-                    "type": "json_schema",
-                    "name": self.json_schema_name,
-                    "schema": self.json_schema,
-                    "strict": True,
-                }
-            }
-
-        response = self.responses_client.responses.create(**api_kwargs)
-        return response.output_text
+        generation = backends.Generation(
+            prompt, instructions=self.system_prompt, max_tokens=self.max_tokens,
+            temperature=self.temperature if self.temperature_explicit else None,
+            schema=self.json_schema, schema_name=self.json_schema_name, store=self.store,
+            previous_response_id=self.previous_response_id,
+        )
+        if self.backend in {"openai", "azure_openai"}:
+            if self.client is None:
+                self.deployment = backends.openai_model(self.backend)
+                self.client = backends.openai_client(self.backend)
+            return backends.api_response(self.client, self.deployment, generation)[0]
+        if self.store or self.previous_response_id:
+            raise LLMError("The selected backend accepts stateless requests only.")
+        if self.backend == "codex_cli":
+            if self.temperature_explicit:
+                raise LLMError("Codex CLI does not support temperature.")
+            return cli_text(
+                "codex", prompt, model=os.environ.get("QLIK_LLM_CODEX_MODEL"), instructions=self.system_prompt,
+                schema=self.json_schema, max_tokens=self.max_tokens,
+            )
+        if self.backend == "gemini":
+            return backends.gemini_text(generation)
+        if self.backend == "ollama":
+            return backends.ollama_text(generation)
+        raise LLMError("QLIK_LLM_RESPONSES_BACKEND must be azure_openai, openai, codex_cli, gemini or ollama.")
 
     def _set_params(self, kwargs):
         """
@@ -235,7 +204,7 @@ class LLMForQlik:
         self.kwargs = {} if len(kwargs) == 0 else utils.get_kwargs(kwargs)
 
         # Set the debug option for generating execution logs
-        self.debug = False if 'debug' not in self.kwargs else ('true' == self.kwargs.pop('debug').lower())
+        self.debug = self.kwargs.pop('debug', 'false').lower() == 'true' and self.backend != "codex_cli"
 
         # Additional information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
@@ -375,17 +344,8 @@ class ClaudeForQlik:
         self.logfile = None
         self.debug = False
 
-        # Initialize the Anthropic client for Azure AI Foundry
-        import anthropic
-        self.client = anthropic.Anthropic(
-            api_key=os.environ.get("AZURE_FOUNDRY_API_KEY"),
-            base_url=os.environ.get("AZURE_FOUNDRY_CLAUDE_API_ENDPOINT"),
-            default_headers={"anthropic-version": "2023-06-01"},
-        )
-        self.api_version = os.environ.get("AZURE_FOUNDRY_API_VERSION", "2024-05-01-preview")
-
-        # Default to Sonnet
-        self.model = os.environ.get("AZURE_CLAUDE_SONNET", "claude-sonnet-4-5")
+        self.backend = backends.claude_backend()
+        self.client = None
 
     def chat(self, load_script=False):
         """
@@ -410,9 +370,8 @@ class ClaudeForQlik:
         self.request_df = utils.request_df(self.request, row_template, col_headers)
 
         # Get the argument strings from the request dataframe
-        if 'kwargs' in self.request_df.columns:
-            kwargs = self.request_df.loc[0, 'kwargs']
-            self._set_params(kwargs)
+        self._set_params('' if self.request_df.empty else self.request_df['kwargs'].iloc[0])
+        cli_limit = cli_row_limit() if self.backend == "claude_cli" else None
 
         # Print the request dataframe to the logs
         if self.debug:
@@ -425,6 +384,8 @@ class ClaudeForQlik:
             prompt = self.request_df.loc[i, 'prompt']
 
             try:
+                if cli_limit is not None and len(self.request_df) > cli_limit:
+                    raise LLMError(f"Claude CLI accepts at most {cli_limit} rows per SSE call.")
                 response_text = self._call_claude(prompt)
             except Exception as e:
                 response_text = "Error: {}".format(str(e))
@@ -451,38 +412,17 @@ class ClaudeForQlik:
         return self.response_df
 
     def _call_claude(self, prompt):
-        """
-        Make a call to the Azure AI Foundry Claude API.
-        """
-
-        # Build the messages list
-        messages = [{"role": "user", "content": prompt}]
-
-        # Build the API call kwargs
-        api_kwargs = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": self.max_tokens,
-        }
-
-        # Anthropic 2 removed sampling kwargs. Preserve the documented Foundry
-        # 2023 API contract and its existing temperature through the wire body.
-        api_kwargs["extra_body"] = {"temperature": self.temperature}
-
-        # Add system prompt if specified (Anthropic uses a top-level system parameter)
-        if self.system_prompt:
-            api_kwargs["system"] = self.system_prompt
-
-        # Add Azure API version as extra header
-        response = self.client.messages.create(
-            **api_kwargs,
-            extra_headers={"api-version": self.api_version},
-        )
-
-        text = "".join(block.text for block in response.content if block.type == "text")
-        if not text:
-            raise RuntimeError("Claude returned no text content")
-        return text
+        if self.backend == "claude_cli":
+            if self.temperature is not None:
+                raise LLMError("Claude CLI does not support temperature.")
+            return cli_text(
+                "claude", prompt, model=self.model, instructions=self.system_prompt, max_tokens=self.max_tokens,
+            )
+        if self.client is None:
+            self.client = backends.claude_client(self.backend)
+        return backends.claude_api_text(self.client, self.backend, self.model, backends.Generation(
+            prompt, instructions=self.system_prompt, max_tokens=self.max_tokens, temperature=self.temperature,
+        ))
 
     def _set_params(self, kwargs):
         """
@@ -493,7 +433,7 @@ class ClaudeForQlik:
         self.kwargs = {} if len(kwargs) == 0 else utils.get_kwargs(kwargs)
 
         # Set the debug option for generating execution logs
-        self.debug = False if 'debug' not in self.kwargs else ('true' == self.kwargs.pop('debug').lower())
+        self.debug = self.kwargs.pop('debug', 'false').lower() == 'true' and self.backend != "claude_cli"
 
         # Additional information is printed to the terminal and logs if the paramater debug = true
         if self.debug:
@@ -502,18 +442,14 @@ class ClaudeForQlik:
             self._print_log(1)
 
         # Set the Claude model: haiku, opus, or sonnet (default: sonnet)
-        model_key = self.kwargs.pop('model', 'sonnet').lower()
-        if model_key in CLAUDE_MODELS:
-            self.model = os.environ.get(CLAUDE_MODELS[model_key], model_key)
-        else:
-            # Allow passing a full model name directly
-            self.model = model_key
+        self.model = backends.claude_model(self.backend, self.kwargs.pop('model', None))
 
         # Set the system prompt for the LLM
         self.system_prompt = self.kwargs.pop('system_prompt', None)
 
         # Set the temperature for the LLM (controls randomness, 0.0 = deterministic, 1.0 = creative)
-        self.temperature = float(self.kwargs.pop('temperature', '0.7'))
+        temperature = self.kwargs.pop('temperature', '0.7' if self.backend == 'foundry' else None)
+        self.temperature = float(temperature) if temperature is not None else None
 
         # Set the max tokens for the LLM response
         self.max_tokens = int(self.kwargs.pop('max_tokens', '2048'))

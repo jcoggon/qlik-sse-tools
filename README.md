@@ -22,7 +22,7 @@ To learn more about Raptor MCP and the broader platform around it, visit [raptor
 - Handle sequence and lag-based prediction workflows for time series style use cases.
 - Extract entities with spaCy and retrain NER models from Qlik-loaded data.
 - Score pretrained models defined in YAML, including local scikit-learn, Keras, and REST-backed models.
-- Call Azure OpenAI and Azure AI Foundry Claude models directly from Qlik expressions or load scripts.
+- Call configured OpenAI, Claude, Gemini and Ollama models from Qlik expressions or load scripts. `LLM_Response` also supports an opt-in Codex CLI pilot.
 - Scrape, search, extract, and agentically research content with Firecrawl.
 - Parse local PDF, Word, Excel, CSV, and text files for document-driven workflows.
 
@@ -53,7 +53,7 @@ To learn more about Raptor MCP and the broader platform around it, visit [raptor
 | Deep learning | Keras layer definition, training history, sequence prediction support, lazy TensorFlow/Keras loading |
 | Text and NLP | spaCy entity extraction, model-based extraction, retraining workflows |
 | Pretrained inference | YAML-defined sklearn, Keras, or REST prediction endpoints callable from Qlik |
-| LLM integrations | Azure OpenAI chat, Responses API with strict JSON schemas, and Azure AI Foundry Claude |
+| LLM integrations | Azure and direct OpenAI, Foundry and direct Anthropic, Gemini, Ollama, and CLI pilots |
 | Document and web intelligence | Firecrawl scrape, extract, search, agent modes, plus local PDF/Word/Excel/CSV parsing |
 
 The current SSE registry exposes `63` functions across these areas.
@@ -173,6 +173,8 @@ The included [`.env.example`](.env.example) covers the currently supported exter
 | Qlik Cloud REST API | `QLIK_CLOUD_API_KEY`; bind and port are optional |
 
 If you only want classical ML, forecasting, clustering, or spaCy-based functions, you can leave the LLM and Firecrawl credentials unset.
+
+See [LLM Integrations](docs/LLM.md) for backend settings and shared CLI login setup.
 
 ## Optional packages
 

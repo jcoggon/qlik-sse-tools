@@ -32,7 +32,9 @@ All `/v1/*` routes require either:
 | `POST /v1/forecast` | Point forecasts and prediction intervals |
 | `POST /v1/anomalies` | Fitted expectations, intervals, and anomaly flags |
 | `POST /v1/correlation` | Pearson, Spearman, or Kendall correlation |
-| `POST /v1/responses` | Azure/OpenAI Responses API, including strict JSON schemas |
+| `POST /v1/responses` | Azure OpenAI or direct OpenAI Responses API, including strict JSON schemas |
+
+Set `QLIK_CLOUD_RESPONSES_BACKEND=openai` with `OPENAI_API_KEY` and `OPENAI_MODEL` for direct OpenAI. The default is `azure_openai`, with the existing Azure configuration. This setting is independent of the SSE `LLM_Response` backend.
 
 Example forecast body:
 

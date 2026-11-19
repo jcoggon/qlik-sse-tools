@@ -608,6 +608,8 @@ LOAD * EXTENSION <AAI>.Get_Features_Expression(Params{model_name});
 
 Send prompts to Azure OpenAI GPT models and get responses back in Qlik.
 
+See [LLM Integrations](docs/LLM.md) for direct OpenAI and Anthropic APIs, the shared Codex CLI pilot behind `LLM_Response`, and the Gemini and Ollama backends.
+
 ### LLM_Chat (ID: 46) — Scalar (Chart Expression)
 
 Send a prompt per row, get a response string.
@@ -916,14 +918,14 @@ Optionally provide a URL to focus the agent on a specific site; leave empty for 
 <AAI>.Firecrawl_Agent(
     'https://www.fundityres.co.za',
     'Find all 315/80R22.5 truck tyre products with brand, price, and availability',
-    'model=spark-1-mini|max_credits=100'
+    'model=spark-2|max_credits=100'
 )
 
 // Open research — no URL needed
 <AAI>.Firecrawl_Agent(
     '',
     'Find truck tyre pricing from South African online retailers for size 315/80R22.5',
-    'model=spark-1-pro|max_credits=500'
+    'model=spark-2|max_credits=500'
 )
 
 // Multiple URLs — semicolon separated
@@ -945,7 +947,7 @@ LOAD
     CompetitorID as key,
     CompetitorURL as source,
     'Find all truck tyre products with brand, size, price, and stock status' as prompt,
-    'model=spark-1-mini|max_credits=100' as kwargs
+    'model=spark-2|max_credits=100' as kwargs
 RESIDENT Competitors;
 
 // Run agent research
@@ -964,14 +966,15 @@ EXTENSION <AAI>.Firecrawl_Agent_Bulk(AgentTasks{key, source, prompt, kwargs});
 | `pdf_mode` | `auto` | Scrape, Extract | PDF parsing: `auto`, `fast` (text-only), `ocr` (force OCR) |
 | `pdf_max_pages` | *(all)* | Scrape, Extract | Maximum PDF pages to process |
 | `enable_web_search` | `false` | Extract | Allow Firecrawl to follow links outside the domain |
-| `schema` | *(none)* | Extract | JSON schema string for structured output |
+| `schema_b64` | *(none)* | Extract / Agent | Base64url-encoded JSON Schema for structured output |
+| `schema` | *(none)* | Extract / Agent | Legacy inline JSON Schema for values without delimiters |
 | `llm_provider` | `openai` | Extract (local) | LLM for local file extraction: `openai`, `claude` |
 | `max_content_chars` | `50000` | Extract (local) | Max characters sent to LLM |
 | `limit` | *(default)* | Search | Maximum number of search results |
 | `location` | *(auto)* | Search | Location for search (e.g., `South Africa`, `Germany`) |
 | `tbs` | *(none)* | Search | Time filter: `qdr:d` (24h), `qdr:w` (week), `qdr:m` (month) |
 | `scrape_content` | `false` | Search | Also scrape full content from search results |
-| `model` | `spark-1-mini` | Agent | Agent model: `spark-1-mini` (cheap) or `spark-1-pro` (accurate) |
+| `model` | `spark-2` | Agent | Agent model: `spark-2` (cheap) or `spark-2` (accurate) |
 | `max_credits` | `2500` | Agent | Maximum credits to spend on the agent task |
 | `debug` | `false` | All | Set `true` for execution logs |
 

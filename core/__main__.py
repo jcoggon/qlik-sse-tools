@@ -980,7 +980,7 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
 
     @staticmethod
     def _responses(request, context):
-        """Execute Azure/OpenAI Responses API scalar or bulk functions."""
+        """Execute scalar or bulk generation through the configured Responses backend."""
         _require_module('LLM Integrations')
         request_list = [request_rows for request_rows in request]
         function = ExtensionService._get_function_id(context)
@@ -996,6 +996,8 @@ class ExtensionService(SSE_grpc.ConnectorServicer):
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, f'Unsupported Responses function id: {function}')
 
         response_rows = utils.get_response_rows(response.values.tolist(), dtypes)
+        if not response_rows:
+            return
         num_request_bundles = len(request_list)
         num_rows = len(response_rows)
         rows_per_bundle = num_rows // num_request_bundles if num_rows >= num_request_bundles else num_rows
