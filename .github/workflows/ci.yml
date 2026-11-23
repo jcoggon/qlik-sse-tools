@@ -136,19 +136,39 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           overwrite: false
-      - name: Download exact Windows native test artifact
-        if: runner.os == 'Windows'
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          artifact-ids: ${{ steps.native-upload.outputs.artifact-id }}
-          merge-multiple: true
-          path: ${{ runner.temp }}/native-downloaded
       - name: Create fresh original Windows consumer
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           & "${{ runner.temp }}/sse-python-native-security/python/python.exe" -m venv .ci-consumer
           python -m pip --python .ci-consumer/Scripts/python.exe install --require-hashes --only-binary=:all: -r locks/bootstrap.lock -r locks/core.lock
+      - name: Download exact Windows native test artifact
+        if: runner.os == 'Windows'
+        id: native-download
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ steps.native-upload.outputs.artifact-id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/native-downloaded
+      # The artifact listing can lag behind a successful upload.
+      - name: Wait before retrying the Windows artifact download
+        if: runner.os == 'Windows' && steps.native-download.outcome == 'failure'
+        shell: pwsh
+        env:
+          NATIVE_DOWNLOADED: ${{ runner.temp }}/native-downloaded
+        run: |
+          if (Test-Path -LiteralPath $env:NATIVE_DOWNLOADED) {
+            Remove-Item -LiteralPath $env:NATIVE_DOWNLOADED -Recurse -Force
+          }
+          Start-Sleep -Seconds 15
+      - name: Retry exact Windows native test artifact download
+        if: runner.os == 'Windows' && steps.native-download.outcome == 'failure'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ steps.native-upload.outputs.artifact-id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/native-downloaded
       - name: Qualify explicit Windows native bundle
         if: runner.os == 'Windows'
         env:
